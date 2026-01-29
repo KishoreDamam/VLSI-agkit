@@ -1,0 +1,38 @@
+{
+  "name": "@kishore-damam/vlsi-agkit",
+  "version": "1.0.0",
+  "description": "AI Agent Kit for VLSI (FPGA & ASIC) Development",
+  "main": "index.js",
+  "bin": {
+    "vlsi-agkit": "./bin/cli.js"
+  },
+  "files": [
+    "bin",
+    ".agent",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "echo \"No tests yet\""
+  },
+  "keywords": [
+    "vlsi",
+    "fpga",
+    "asic",
+    "rtl",
+    "systemverilog",
+    "ai",
+    "agent",
+    "gemini",
+    "cursor"
+  ],
+  "author": "Kishore Damam",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kishore-damam/vlsi-kit"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  }
+}
