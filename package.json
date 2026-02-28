@@ -4,7 +4,7 @@
   "description": "AI Agent Kit for VLSI (FPGA & ASIC) Development",
   "main": "index.js",
   "bin": {
-    "vlsi-agkit": "./bin/cli.js"
+    "vlsi-agkit": "bin/cli.js"
   },
   "files": [
     "bin",
@@ -30,7 +30,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kishore-damam/vlsi-kit"
+    "url": "git+https://github.com/kishore-damam/vlsi-kit.git"
   },
   "engines": {
     "node": ">=14.0.0"
