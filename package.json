@@ -1,0 +1,39 @@
+{
+  "name": "@kishore-damam/vlsi-agkit",
+  "version": "1.1.0",
+  "description": "AI Agent Kit for VLSI (FPGA & ASIC) Development",
+  "main": "index.js",
+  "bin": {
+    "vlsi-agkit": "bin/cli.js"
+  },
+  "files": [
+    "bin",
+    ".agent",
+    "CLAUDE.md",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test \"test/**/*.test.js\""
+  },
+  "keywords": [
+    "vlsi", "fpga", "asic", "rtl", "systemverilog",
+    "ai", "agent", "gemini", "cursor", "claude", "windsurf"
+  ],
+  "author": "Kishore Damam",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/KishoreDamam/VLSI-agkit.git"
+  },
+  "bugs": {
+    "url": "https://github.com/KishoreDamam/VLSI-agkit/issues"
+  },
+  "homepage": "https://github.com/KishoreDamam/VLSI-agkit#readme",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@inquirer/prompts": "^7.0.0"
+  }
+}

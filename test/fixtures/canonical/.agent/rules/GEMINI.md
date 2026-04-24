@@ -1,0 +1,2 @@
+# Gemini Rules
+Base rules.
