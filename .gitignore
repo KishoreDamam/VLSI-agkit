@@ -1,0 +1,36 @@
+# Per-user simulator/path overrides (spec §7.3)
+.agent/tools.local.mk
+
+# Skill-creator eval workspaces — keep aggregated benchmarks; ignore raw runs.
+# (Aggregated benchmarks are explicitly re-included with `!` rules below.)
+.agent/skills/*-workspace/**/tmp/
+.agent/skills/*-workspace/**/*.log
+.agent/skills/*-workspace/**/eval-*/
+.agent/skills/*-workspace/**/transcripts/
+.agent/skills/*-workspace/**/outputs/
+!.agent/skills/*-workspace/**/benchmark.json
+!.agent/skills/*-workspace/**/benchmark.md
+
+# Build artifacts (simulator output)
+*.vvp
+*.out
+*.jou
+*.pb
+xsim.dir/
+work/
+transcript
+csrc/
+simv*
+ucli.key
+DVEfiles/
+
+# OS / editor noise
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# Node
+node_modules/
+npm-debug.log
