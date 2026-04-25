@@ -1,0 +1,18 @@
+# Specs and plans (developer artifacts)
+docs/
+
+# CI configuration (not relevant to consumers)
+.github/
+
+# Eval workspaces (large, transient, regenerable)
+.agent/skills/*-workspace/
+
+# Eval harness internals — keep evals.json + run.sh, ship to consumers
+.agent/skills/_evals/**/results/
+
+# Worktree / CI state
+.claude/
+
+# Source-control metadata
+.git/
+.gitignore
