@@ -1,0 +1,31 @@
+# Template for a skill's examples/Makefile.
+# Copy to <skill>/examples/Makefile and fill in.
+#
+# Tier declaration (REQUIRED) — pick exactly one. Use the EXACT token,
+# no spaces around `:=`, no trailing whitespace (Make is sensitive to that):
+#   build-sim          : compile + elaborate + run self-checking testbench
+#   build-only         : compile + elaborate, no run
+#   tool-output        : run a tool script and diff against expected log
+#   needs-vendor-sim   : skip on iverilog-only CI; manual diff against expected log
+#   manual-review      : no automated check (last resort; document why)
+tier := build-sim
+
+# Source files (relative to this Makefile)
+SRCS := $(wildcard *.sv)
+
+# Top-level testbench module name
+TOP  := tb_<name>
+
+# REPO_ROOT is set by the root Makefile when it recurses via `$(MAKE) -C`.
+# For direct invocation (cd into examples/ and run `make`), fall back to
+# climbing four levels up: examples/ -> <skill>/ -> skills/ -> .agent/ -> repo
+REPO_ROOT ?= $(abspath $(CURDIR)/../../../..)
+
+include $(REPO_ROOT)/tools.mk
+
+.PHONY: verify clean
+
+verify: $(SIM_VERIFY_TARGET)
+
+clean:
+	$(SIM_CLEAN)
