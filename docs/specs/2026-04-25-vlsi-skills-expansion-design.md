@@ -67,14 +67,19 @@ Order:
 
 ### 4.3 Wave 2 batches (21, parallel within batch)
 
-- **Batch A (coding):** `fifo-design`, `arbitration`, `handshake-protocols`,
+Batches are sized to keep parallel dispatch reviewable (≤5 skills per batch).
+`brainstorming` and `plan-writing` are process skills, not implementation flows,
+so they form their own batch.
+
+- **Batch A (coding, 5):** `fifo-design`, `arbitration`, `handshake-protocols`,
   `axi-protocols`, `sva-assertions`
-- **Batch B (flow-RTL):** `reset-strategy`, `clean-rtl`, `ip-reuse`,
+- **Batch B (flow-RTL, 4):** `reset-strategy`, `clean-rtl`, `ip-reuse`,
   `rtl-microarchitecture`
-- **Batch C (flow-tool):** `formal-verification`, `functional-coverage`,
+- **Batch C (flow-tool, 5):** `formal-verification`, `functional-coverage`,
   `simulation-flows`, `tcl-scripting`, `waveform-debugging`
-- **Batch D (flow-impl):** `dft-strategy`, `asic-flows`, `fpga-flows`,
-  `low-power-design`, `power-intent-upf`, `brainstorming`, `plan-writing`
+- **Batch D (flow-impl, 5):** `dft-strategy`, `asic-flows`, `fpga-flows`,
+  `low-power-design`, `power-intent-upf`
+- **Batch E (process, 2):** `brainstorming`, `plan-writing`
 
 ## 5. Skill anatomy
 
@@ -107,6 +112,19 @@ type: coding | flow
   `Verilator:`).
 - Citations only when stating a normative rule — IEEE 1800-2017 (SystemVerilog),
   IEEE 1801 (UPF), ARM AMBA AXI4 spec, vendor user-guide section references.
+
+**What "normative rule" means (cite vs. skip examples):**
+
+| Statement | Cite? | Why |
+|---|---|---|
+| "VALID must not depend on READY in AXI handshakes" | ✅ Cite — ARM IHI 0022 §A3.3.1 | Protocol-mandated rule; misciting is a bug-class |
+| "Use non-blocking assignments in clocked `always_ff` blocks" | ✅ Cite — IEEE 1800-2017 §10.4.2 | Language-mandated semantics; subtle if reader is unsure |
+| "Two-flop synchronizers reduce metastability" | ❌ Skip | General practice; widely known, no spec mandates 2 vs 3 |
+| "Register output paths for better timing" | ❌ Skip | Heuristic, not a rule |
+| "Reset must be released synchronously to its destination clock" | ✅ Cite — IEEE 1800-2017 §4.10 (timing) plus a vendor UG when discussing CDC tooling | Behavior is normative; tooling is vendor-specific |
+
+Default when unsure: skip the citation but link to the relevant `references/`
+file. Citation churn is worse than missing citations.
 
 ## 6. Templates
 
@@ -185,6 +203,12 @@ type: flow
 Both templates live at `.agent/skills/_templates/` so future skills have a starting
 point. Reviewer subagents check conformance against these files.
 
+**Loader-skip convention:** any directory under `.agent/skills/` whose name begins
+with `_` (underscore) is treated as non-skill metadata and ignored by skill
+loaders, the root `Makefile` walker, and the skills index. The `_templates/`
+directory is the canonical user of this convention; documented in
+`.agent/skills/README.md`.
+
 ## 7. Validation strategy
 
 ### 7.1 Worked-example tiers
@@ -198,7 +222,22 @@ Each `examples/Makefile` declares one of these targets as default:
 | **tool-output** | run a `.sdc`/`.upf`/Tcl script and diff against an expected log | flow skills with tool artifacts |
 | **manual-review** | no automated check; human reviewer per `agents/grader.md` rubric | rare; only when nothing else fits |
 
-### 7.2 Tool discovery (no hardcoded paths)
+### 7.2 Platform support
+
+Validation must run on **Linux**, **macOS**, and **Windows (via Git-Bash or WSL)**.
+`examples/Makefile` files are written in POSIX-compatible Make:
+- Forward slashes in paths.
+- No bashisms in recipes (use `sh`-portable constructs).
+- Vendor invocation via bare command name (`xvlog`, `xelab`, `xsim`, etc.) — the
+  Windows-side tools provide both `<tool>` and `<tool>.bat`; both work from
+  Git-Bash with PATH set.
+- Where a recipe genuinely needs a shell, declare `SHELL := /bin/sh` at the top
+  of `tools.mk`.
+
+Native Windows `cmd.exe` / PowerShell users are expected to run inside Git-Bash
+or WSL. This is documented in `.agent/skills/README.md`.
+
+### 7.3 Tool discovery (no hardcoded paths)
 
 Precedence:
 1. **PATH** — Makefiles invoke `xvlog`, `xelab`, `xsim`, `iverilog`, `vcs`, `xrun`,
@@ -219,13 +258,24 @@ Either add the simulator to PATH (typical: `source <vendor>/settings64.sh`)
 or set VLSI_SIM_BIN in .agent/tools.local.mk (see tools.example.mk).
 ```
 
-### 7.3 CI hook
+### 7.4 CI hook
 
-Root `Makefile` walks `.agent/skills/*/examples/` and runs each `Makefile` target.
-A skill whose example fails its tier blocks the PR. Skipping is allowed only when
-the skill's `Makefile` declares `tier := manual-review` with a reason.
+A `.github/workflows/skills-verify.yml` GitHub Actions workflow runs the root
+`Makefile` walker on every PR. The workflow:
+- Runs on `ubuntu-latest` and `windows-latest`.
+- Installs `iverilog` (apt / chocolatey) — the **license-free baseline tier**.
+- Skips skills whose `examples/Makefile` declares `tier := needs-vendor-sim`
+  (UVM-heavy, vendor-only constructs); those tier as `manual-review` in CI.
+- Fails the PR if any non-skipped skill's example fails.
 
-### 7.4 Skill-creator eval (Wave 1 only)
+**Vendor licensing:** the kit assumes contributors **do not** have Vivado/VCS/
+Questa licenses. Skills whose worked examples require a vendor sim must either
+provide an `iverilog`-compatible reduced example or declare
+`tier := needs-vendor-sim` and ship an expected-output log committed alongside
+the example so a contributor can do a manual diff. A vendor-sim opt-in CI
+workflow can be added later but is **out of scope for this expansion**.
+
+### 7.5 Skill-creator eval (Wave 1 only)
 
 Before rewriting each Wave 1 skill:
 - Snapshot current SKILL.md to `<workspace>/skill-snapshot/`.
@@ -246,10 +296,15 @@ get reviewer-gate validation only (qualitative).
 
 Deliverables:
 - Both template files in `.agent/skills/_templates/`.
-- Root `Makefile` walker + `tools.mk` with PATH/env discovery.
+- Root `Makefile` walker + `tools.mk` with PATH/env discovery (per §7.3).
 - `tools.example.mk` committed; `.agent/tools.local.mk` added to `.gitignore`.
-- Skill-creator eval harness wired up.
-- Baseline eval run for the six Wave 1 skills (current versions).
+- `.github/workflows/skills-verify.yml` (per §7.4) running on `ubuntu-latest`
+  and `windows-latest` with `iverilog` installed.
+- Loader-skip rule (`_`-prefixed dirs) implemented and documented (per §6.3).
+- Skill-creator eval harness committed under `.agent/skills/_evals/` —
+  reproducible by anyone, not a one-shot run.
+- Baseline eval run for the six Wave 1 skills (current versions); results
+  committed to `.agent/skills/<name>-workspace/iteration-1/`.
 
 ### 8.2 Wave 1 — Core 6 (sequential)
 
@@ -268,11 +323,11 @@ Order:
 - Skill-creator re-eval shows non-regression (pass-rate ≥ baseline)
 - Reviewer subagent approves with no Issues
 
-### 8.3 Wave 2 — Breadth (21 skills, 4 parallel batches)
+### 8.3 Wave 2 — Breadth (21 skills, 5 parallel batches A–E)
 
-Within a batch: dispatch parallel via Agent tool (one subagent per skill).
-Between batches: reviewer gate on the whole batch; fix template drift before
-next batch starts.
+Batches A–E are defined in §4.3. Within a batch: dispatch parallel via Agent tool
+(one subagent per skill). Between batches: reviewer gate on the whole batch; fix
+template drift before next batch starts.
 
 **Per-batch gate:**
 - All skills in the batch pass per-skill gate (minus skill-creator re-eval)
@@ -296,14 +351,26 @@ next batch starts.
 
 .agent/tools.example.mk              # committed
 .agent/tools.local.mk                # gitignored
-docs/specs/                          # spec lives here
+.github/workflows/skills-verify.yml  # CI hook (§7.4)
+docs/specs/                          # spec lives here; excluded from npm tarball
 ```
+
+**npm tarball scope:** `docs/`, `.github/`, `evals/` workspaces, and any
+`*-workspace/` directories are excluded via `.npmignore`. Only `.agent/`,
+`bin/`, `package.json`, `README.md`, and `LICENSE` ship to consumers. Keeps
+the install lean and prevents shipping reviewer/eval artifacts.
 
 ### 9.2 Migration steps
 
 1. Create `_templates/` and commit both templates.
 2. For each existing skill: convert single-file `SKILL.md` → directory with the new
-   shape. Refactor existing content into the new template, do not discard.
+   shape. Refactor existing content into the new template; **do not discard**
+   correct content.
+   - **Correctness exception:** if migration uncovers a technical error in
+     existing content (a broken pattern, a wrong claim, a stale vendor command),
+     **correct it** and call it out in the commit message under a
+     `Fixes existing content:` line. Do not silently propagate broken patterns
+     into production-grade skills.
 3. Apply renames:
    - `systemverilog-patterns` → `systemverilog-coding`
    - `uvm-patterns` → `uvm-coding`
@@ -324,21 +391,35 @@ docs/specs/                          # spec lives here
 |---|---|
 | Template drift across 27 skills | Reviewer-subagent gate after every skill in Wave 1; per-batch reviewer gate in Wave 2 |
 | Vendor-callouts go stale | Keep them brief, version-tagged where it matters (`Vivado 2024.1+:`); collect them in `references/vendor-notes.md` for easy audit |
-| Examples become unbuildable as tools evolve | CI hook catches it; Wave 0 deliverable |
-| User has no simulator | Tool-output / manual-review tiers; first-run UX error gives clear remedy |
-| UVM examples too heavy for non-vendor users | UVM skill examples ship with both an xsim Makefile target and a "manual-review" fallback explanation |
+| Examples become unbuildable as tools evolve | CI hook (§7.4) catches it; Wave 0 deliverable |
+| User has no simulator | Manual-review tier; first-run UX error gives clear remedy |
+| UVM examples too heavy for license-free CI | UVM skill examples declare `tier := needs-vendor-sim`; ship expected-output log for manual diff (§7.4) |
+| Windows/Linux Makefile portability | POSIX-only Make; CI matrix covers `ubuntu-latest` + `windows-latest` (Git-Bash) (§7.2) |
+| Vendor licensing barrier for contributors | Default CI runs license-free `iverilog` only; vendor-sim CI is opt-in and out of scope for this expansion (§7.4) |
+| Existing skill content has technical errors | Migration step 2 mandates correction with commit-message call-out; reviewer subagent is briefed to flag broken patterns inherited from old content |
 | Token cost in actively-loaded SKILL.md | 400-line cap enforced by reviewer; everything deeper goes to `references/` |
+| `_templates/` accidentally loaded as a skill | Loader-skip rule (§6.3): underscore-prefixed dirs ignored |
+| Eval workspaces bloat the npm tarball | `.npmignore` excludes `*-workspace/`, `docs/`, `.github/` (§9.1) |
 
 ## 11. Acceptance criteria
 
 - [ ] All 27 skills follow their template; reviewer subagent says so.
-- [ ] Every skill has at least one buildable `examples/` artifact (or a justified
-      `manual-review` declaration).
-- [ ] Root `make verify` walks all skills and exits 0.
-- [ ] Wave 1 core skills show non-regressing skill-creator eval scores.
+- [ ] Every skill has at least one `examples/` artifact with a declared tier
+      (`build+sim`, `build only`, `tool-output`, `needs-vendor-sim`, or
+      `manual-review`).
+- [ ] Root `make verify` walks all skills and exits 0 on a stock
+      `iverilog`-only environment (license-free contributor baseline).
+- [ ] `.github/workflows/skills-verify.yml` passes on `ubuntu-latest` and
+      `windows-latest`.
+- [ ] Wave 1 core skills show non-regressing skill-creator eval scores
+      vs. their committed `iteration-1/` baselines.
+- [ ] Skill-creator eval harness is committed (`.agent/skills/_evals/`) and
+      reproducible — `python -m scripts.run_loop ...` works for any
+      contributor.
 - [ ] `.agent/skills/README.md` lists all 27 skills with one-line descriptions.
+- [ ] `.npmignore` excludes spec/CI/workspace dirs from the published tarball.
 - [ ] No committed file references a system-specific path.
-- [ ] `README.md` skill count is updated.
+- [ ] `README.md` skill count is updated (18 → 27).
 
 ## 12. Next step
 
