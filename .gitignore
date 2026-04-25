@@ -23,7 +23,8 @@ a.out
 *.pb
 xsim.dir/
 work/
-transcript          # ModelSim/Questa default log
+# ModelSim/Questa default log
+transcript
 csrc/
 simv*
 ucli.key
