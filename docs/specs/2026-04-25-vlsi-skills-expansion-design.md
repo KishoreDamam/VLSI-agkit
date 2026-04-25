@@ -213,13 +213,16 @@ directory is the canonical user of this convention; documented in
 
 ### 7.1 Worked-example tiers
 
-Each `examples/Makefile` declares one of these targets as default:
+Each `examples/Makefile` declares one of these tier tokens (hyphenated to
+avoid GNU Make whitespace foot-guns — token is matched exactly via
+`ifeq ($(tier),...)`):
 
 | Tier | What runs | Target skill set |
 |---|---|---|
-| **build+sim** | compile + elaborate + run self-checking testbench | most coding skills |
-| **build only** | compile + elaborate, no run | SVA-heavy, library-heavy |
+| **build-sim** | compile + elaborate + run self-checking testbench | most coding skills |
+| **build-only** | compile + elaborate, no run | SVA-heavy, library-heavy |
 | **tool-output** | run a `.sdc`/`.upf`/Tcl script and diff against an expected log | flow skills with tool artifacts |
+| **needs-vendor-sim** | skip on `iverilog`-only CI; manual diff against committed expected log | UVM-heavy, vendor-only constructs |
 | **manual-review** | no automated check; human reviewer per `agents/grader.md` rubric | rare; only when nothing else fits |
 
 ### 7.2 Platform support
@@ -405,7 +408,7 @@ the install lean and prevents shipping reviewer/eval artifacts.
 
 - [ ] All 27 skills follow their template; reviewer subagent says so.
 - [ ] Every skill has at least one `examples/` artifact with a declared tier
-      (`build+sim`, `build only`, `tool-output`, `needs-vendor-sim`, or
+      (`build-sim`, `build-only`, `tool-output`, `needs-vendor-sim`, or
       `manual-review`).
 - [ ] Root `make verify` walks all skills and exits 0 on a stock
       `iverilog`-only environment (license-free contributor baseline).
