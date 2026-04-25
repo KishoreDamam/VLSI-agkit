@@ -2,7 +2,12 @@
 .agent/tools.local.mk
 
 # Skill-creator eval workspaces — keep aggregated benchmarks; ignore raw runs.
-# (Aggregated benchmarks are explicitly re-included with `!` rules below.)
+# Layout assumption: aggregate_benchmark.py writes benchmark.{json,md} at
+# <workspace>/iteration-N/ — a SIBLING of eval-*/, transcripts/, outputs/.
+# The `!` re-include rules below only work because benchmark.{json,md} are
+# NOT inside any of the ignored subdirectories. If skill-creator ever moves
+# benchmark output into eval-*/ or outputs/, these `!` rules will silently
+# stop working (gitignore can't re-include from inside an excluded dir).
 .agent/skills/*-workspace/**/tmp/
 .agent/skills/*-workspace/**/*.log
 .agent/skills/*-workspace/**/eval-*/
@@ -13,12 +18,12 @@
 
 # Build artifacts (simulator output)
 *.vvp
-*.out
+a.out
 *.jou
 *.pb
 xsim.dir/
 work/
-transcript
+transcript          # ModelSim/Questa default log
 csrc/
 simv*
 ucli.key
