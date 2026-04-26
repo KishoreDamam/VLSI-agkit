@@ -28,7 +28,14 @@ endif
 #    no MAKEFILE_LIST guessing.
 -include $(REPO_ROOT)/.agent/tools.local.mk
 
-# 2. Resolve simulator: env var wins, else first one found on PATH.
+# 2. Validate tier early so authoring typos fail loud, before any
+#    environmental check (simulator discovery) can mask them.
+VALID_TIERS := build-sim build-only tool-output needs-vendor-sim manual-review
+ifeq ($(filter $(tier),$(VALID_TIERS)),)
+$(error tools.mk: tier='$(tier)' is not one of: $(VALID_TIERS). Check for trailing whitespace in your Makefile's `tier := ...` line.)
+endif
+
+# 3. Resolve simulator: env var wins, else first one found on PATH.
 #    Note: command -v works in both bash and dash; SHELL := /bin/sh forces
 #    a POSIX shell so this is portable across Linux/macOS/Git-Bash.
 ifndef VLSI_SIM
@@ -45,38 +52,37 @@ ifndef VLSI_SIM
   endif
 endif
 
-# 3. Apply VLSI_SIM_BIN if user provided it
+# 4. Apply VLSI_SIM_BIN if user provided it
 ifdef VLSI_SIM_BIN
   SIM_PREFIX := $(VLSI_SIM_BIN)/
 else
   SIM_PREFIX :=
 endif
 
-# 4. Bail out clearly if nothing is found
+# 5. Bail out clearly if nothing is found
 ifndef VLSI_SIM
 $(error No SystemVerilog simulator found on PATH. Expected one of: xsim, iverilog, vcs, xrun, vsim. Either add the simulator to PATH (typical: `source <vendor>/settings64.sh`) or set VLSI_SIM in .agent/tools.local.mk (see tools.example.mk))
-endif
-
-# 5. Validate tier early so typos fail loud, not silent
-VALID_TIERS := build-sim build-only tool-output needs-vendor-sim manual-review
-ifeq ($(filter $(tier),$(VALID_TIERS)),)
-$(error tools.mk: tier='$(tier)' is not one of: $(VALID_TIERS). Check for trailing whitespace in your Makefile's `tier := ...` line.)
 endif
 
 # 6. Tier-aware skips (do NOT depend on simulator)
 ifeq ($(tier),manual-review)
 SIM_VERIFY_TARGET := manual-review-skip
-SIM_CLEAN         := @true
+SIM_CLEAN         := :
 manual-review-skip:
 	@echo "[SKIP] tier=manual-review for $(CURDIR) — see SKILL.md for review notes"
 endif
 
 ifeq ($(tier),needs-vendor-sim)
   ifeq ($(VLSI_SIM),iverilog)
+# iverilog can't run vendor-only constructs — skip with a clear message
 SIM_VERIFY_TARGET := needs-vendor-sim-skip
-SIM_CLEAN         := @true
+SIM_CLEAN         := :
 needs-vendor-sim-skip:
 	@echo "[SKIP] tier=needs-vendor-sim, VLSI_SIM=iverilog for $(CURDIR) — manual diff required against expected log"
+  else
+# Vendor simulator available — alias needs-vendor-sim to build-sim so the
+# per-simulator rules below run the actual verify.
+override tier := build-sim
   endif
 endif
 
