@@ -1,0 +1,41 @@
+{
+  "skill_name": "timing-constraints",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a 156.25 MHz Ethernet RX clock, a 200 MHz internal clock, and a 50 MHz APB clock. They're all asynchronous. Write the SDC clock declarations and set up the clock groups.",
+      "expected_output": "create_clock for each with correct period, names; set_clock_groups -asynchronous covering all three groups; brief note about needing per-domain resets/synchronizers for crossings.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "My DDR3 PHY needs a 1 ns input setup and 0.5 ns input hold relative to the captured clock. The captured clock is 400 MHz. Write the set_input_delay constraints.",
+      "expected_output": "set_input_delay -clock <clk> -max <input_delay> and -min <hold_delay> referenced correctly; note about source-synchronous vs system-synchronous if relevant.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I have a configuration register that's only written once at boot and held static. STA is reporting setup violations on paths from this register. What's the right constraint?",
+      "expected_output": "set_false_path -from [get_cells cfg_reg/Q] OR set_multicycle_path with a generous setup factor; explains tradeoffs.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Explain set_multicycle_path with both setup and hold examples. I always get the hold side wrong.",
+      "expected_output": "Setup multicycle relaxes setup analysis by N cycles; hold side must be adjusted by N-1 to compensate (set_multicycle_path N-1 -hold) or design will fail hold; concrete example with N=3.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "For an async FIFO crossing 100 MHz to 250 MHz, what set_max_delay value should I use on the gray-coded pointer paths? Explain the choice.",
+      "expected_output": "Use destination clock period (4 ns for 250 MHz) so path is bounded but doesn't restrict synthesis unnecessarily; -datapath_only flag to exclude clock skew; rationale = pointer must arrive in <1 destination period for stable sampling.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "I'm targeting a Xilinx Ultrascale+ FPGA. What XDC-specific properties or commands matter beyond the standard SDC subset I'd use for ASIC?",
+      "expected_output": "set_property PACKAGE_PIN, IOSTANDARD; set_property CLOCK_DEDICATED_ROUTE for non-clock-capable inputs; create_pblock for floorplanning; PROHIBIT for site exclusion; mentions CLOCK_BUFFER_TYPE.",
+      "files": []
+    }
+  ]
+}

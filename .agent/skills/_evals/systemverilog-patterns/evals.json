@@ -1,0 +1,35 @@
+{
+  "skill_name": "systemverilog-patterns",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "When should I use logic vs reg vs wire in SystemVerilog? I'm coming from Verilog-2001. Give me a rule that covers always_ff, always_comb, and continuous assigns.",
+      "expected_output": "Rule of thumb: use logic everywhere except dotted-port instances of legacy modules; never reg or wire in new SV. Explanation: logic is a 4-state datatype that the compiler restricts to single-driver semantics inside always_ff/always_comb, eliminating the reg-vs-wire confusion.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Show me the right way to declare and use a parameterized SystemVerilog interface for connecting a producer and consumer with valid/ready handshake. Include modports.",
+      "expected_output": "interface with parameterized DATA_WIDTH, signals + clock + rst, two modports (producer: output valid/data, input ready; consumer: input valid/data, output ready), example instantiation.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I'm getting 'multiple drivers' errors when I assign to a struct field from two always blocks (different fields each block). Show me the right pattern.",
+      "expected_output": "Either: use one always block that writes the whole struct, or use packed struct with separate logic vars and combine at end. Notes that SV requires single driver per net even at sub-element granularity in always_ff.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "What's the difference between always_comb and always @* and always @(...). When does each get me into trouble?",
+      "expected_output": "always_comb: tool-checked combinational, sensitivity inferred including function calls, no latches. always @*: similar but no latch check; legacy. always @(...): manual sensitivity list — easy to forget signals, simulation/synthesis mismatch risk.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Show me how to write a pipelined module with N stages where N is a parameter, using a generate-for loop. Inputs and outputs are 32-bit.",
+      "expected_output": "Generate block with for-loop creating an array of pipeline registers, edge cases at stage 0 (input from port) and stage N-1 (output to port), reset behavior, parameter validation.",
+      "files": []
+    }
+  ]
+}

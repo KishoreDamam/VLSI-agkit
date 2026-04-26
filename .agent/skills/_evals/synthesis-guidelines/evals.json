@@ -1,0 +1,35 @@
+{
+  "skill_name": "synthesis-guidelines",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "My RTL synthesizes fine but post-synth gate-level sim fails on reset. What are the most common RTL mistakes that pass behavioral sim but break gate-level sim around reset?",
+      "expected_output": "Initial blocks, X-propagation differences, reset polarity asymmetry between RTL and library cells, missing resets on inferred latches/RAMs, async-reset assertion races; suggests fix patterns.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Synthesis is inferring a latch on my next-state logic but I have a fully-covered case statement. What's likely missing?",
+      "expected_output": "Case covers states but not all output signals get assigned in every branch; OR default assignments at top of always block missing; OR reading a struct field that has no driver in some branch. Shows fix.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I have a critical-path multiplier feeding an adder. The combined path is 3.2 ns and I need 2.5 ns. What's the standard set of synthesis-friendly RTL transformations to try first?",
+      "expected_output": "Add a pipeline register between mul and add; if can't add latency, try operand pre-registration so mul has a full cycle; consider retiming directive (Vivado: set_property RETIMING_FORWARD; DC: optimize_registers); restructure to balance.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "What's the synthesis impact of using SystemVerilog interfaces vs flat ports for module connections? Any gotchas?",
+      "expected_output": "Synthesizable; Vivado/DC handle them. Gotchas: modport-based access in always blocks, virtual interface usage (sim-only), and parameter overrides at instantiation can interact with elaboration order.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "How do I tell synthesis to not optimize away a register I'm using as a debug observation point? Targeting both Synopsys DC and Xilinx Vivado.",
+      "expected_output": "DC: set_dont_touch [get_cells <reg>] (or KEEP attribute on signal); Vivado: (* keep = \"true\" *) or (* dont_touch = \"true\" *); explains which survives place-and-route.",
+      "files": []
+    }
+  ]
+}

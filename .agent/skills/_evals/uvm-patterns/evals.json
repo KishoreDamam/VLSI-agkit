@@ -1,0 +1,35 @@
+{
+  "skill_name": "uvm-patterns",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "Sketch the UVM testbench structure for verifying an AXI4-Lite slave with 16 32-bit registers. I need agent, env, scoreboard, sequence library. Don't write all the code — show me the class hierarchy and the key responsibilities.",
+      "expected_output": "axi_lite_agent (driver, monitor, sequencer, config), reg_env (agent + reg_block + adapter + predictor + scoreboard), reg-test sequences (write-readback, reset values, walking-1s); UVM register layer with adapter; covergroup placement.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Write a UVM sequence that does a back-pressure test on an AXI-Stream interface: random tready de-assertions, no two adjacent low cycles. Use constraints, not procedural delays.",
+      "expected_output": "uvm_sequence with `uvm_object_utils, items containing tready_pattern as rand bit array, constraint preventing adjacent zeros, body() task that sends them in order. Notes do-while-randomize idiom.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "I'm seeing my scoreboard miss transactions because the analysis port FIFO sometimes fills up. What's the right pattern for a scoreboard with separate expected and actual streams?",
+      "expected_output": "uvm_tlm_analysis_fifo per stream, write task pulls from both via get(), pairs and compares; or analysis_imp + queues with run_phase forking compare loops; mention uvm_in_order_comparator as built-in.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Explain UVM phasing. When does configure_phase fire vs build_phase, and where should I create vs configure components?",
+      "expected_output": "build_phase: instantiate components, get config from db. connect_phase: wire ports. configure_phase (rare, mostly user-defined): post-connect setup. run_phase: stimulus + monitoring. Top-down build, bottom-up connect.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "How do I integrate a third-party AXI VIP into my UVM env when the VIP uses analysis exports but my scoreboard expects analysis ports?",
+      "expected_output": "Use uvm_tlm_analysis_fifo as adapter, or wrap the VIP's export with a port; mention uvm_subscriber if monitor-only consumer.",
+      "files": []
+    }
+  ]
+}
