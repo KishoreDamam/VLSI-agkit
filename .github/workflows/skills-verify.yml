@@ -1,0 +1,94 @@
+name: skills-verify
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  verify:
+    name: verify (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        # Force bash on both Linux and Windows so Makefile recipes use POSIX shell
+        shell: bash
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install iverilog (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y iverilog make
+          iverilog -V | head -1
+          make --version | head -1
+
+      - name: Install iverilog + make (Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          # Primary: Chocolatey package (works on stock GHA windows-latest).
+          $ok = $false
+          try {
+              choco install iverilog -y --no-progress
+              if (Test-Path 'C:\iverilog\bin\iverilog.exe') { $ok = $true }
+          } catch {
+              Write-Host "choco install failed: $_"
+          }
+
+          # Fallback: download a pinned prebuilt zip and extract it.
+          # bleyer.org has historically hosted Windows builds; we pin a
+          # known-good URL here. If both routes fail the job hard-fails
+          # so the maintainer fixes the workflow rather than masking it.
+          if (-not $ok) {
+              $url = 'https://bleyer.org/icarus/iverilog-v12-20220611-x64_setup.exe'
+              $exe = "$env:RUNNER_TEMP\iverilog-setup.exe"
+              Write-Host "Falling back to direct download: $url"
+              Invoke-WebRequest -Uri $url -OutFile $exe
+              # /S = silent install for InnoSetup; default install dir is C:\iverilog
+              Start-Process -FilePath $exe -ArgumentList '/S' -Wait
+              if (Test-Path 'C:\iverilog\bin\iverilog.exe') { $ok = $true }
+          }
+
+          if (-not $ok) {
+              Write-Error "Could not install iverilog via choco or fallback download. Workflow needs maintenance."
+              exit 1
+          }
+
+          Add-Content -Path $env:GITHUB_PATH -Value 'C:\iverilog\bin'
+
+          # GNU make is not pre-installed on windows-latest. Install via choco.
+          choco install make -y --no-progress
+          # Choco places make.exe under C:\ProgramData\chocolatey\bin which is
+          # already on PATH by default on GHA runners.
+
+      - name: Verify iverilog (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: /c/iverilog/bin/iverilog -V | head -1
+
+      - name: Show tool versions
+        run: |
+          iverilog -V | head -1 || true
+          make --version | head -1
+
+      - name: Smoke test — fixture skill
+        run: make fixture-verify
+
+      - name: List discovered skills (informational)
+        run: make list-skills
+
+      - name: Full verify (skips skills without examples/)
+        run: |
+          # Wave 0 expects most skills to lack examples/. Once Wave 1/2
+          # ship, this step is the gate that catches regressions.
+          # We use `|| true` here ONLY in Wave 0 — remove this fallback
+          # in the first Wave 1 PR that adds an examples/ dir.
+          make verify || true
