@@ -11,9 +11,11 @@ module tb_and_gate;
         {a, b} = 2'b10; #1; if (y !== 1'b0) errors++;
         {a, b} = 2'b11; #1; if (y !== 1'b1) errors++;
 
-        if (errors == 0)
+        if (errors == 0) begin
             $display("PASS: and_gate truth table");
-        else
+            $finish;
+        end else begin
             $fatal(1, "FAIL: and_gate had %0d errors", errors);
+        end
     end
 endmodule
