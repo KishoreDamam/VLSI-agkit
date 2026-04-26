@@ -1,6 +1,6 @@
 ---
-name: <skill-name>
-description: <one-line trigger description used by skill routing>
+name: "<skill-name>"
+description: "<one-line trigger description used by skill routing>"
 type: coding
 ---
 
