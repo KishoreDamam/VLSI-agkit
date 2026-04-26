@@ -24,13 +24,21 @@
 #
 # Example overrides (uncomment ONE block):
 #
-# # Vivado xsim (Windows or Linux)
+# # Vivado xsim (Linux path; on Windows use e.g. C:/Xilinx/2024.2/Vivado/bin)
 # VLSI_SIM     := xsim
 # VLSI_SIM_BIN := /opt/Xilinx/2024.2/Vivado/bin
 #
 # # Icarus Verilog (default if PATH already has it)
 # VLSI_SIM     := iverilog
 #
-# # VCS
+# # VCS (Synopsys)
 # VLSI_SIM     := vcs
 # VLSI_SIM_BIN := /tools/synopsys/vcs/U-2023.03/bin
+#
+# # Xcelium (Cadence)
+# VLSI_SIM     := xrun
+# VLSI_SIM_BIN := /tools/cadence/xcelium/23.09/bin
+#
+# # Questa / ModelSim (Mentor / Siemens EDA)
+# VLSI_SIM     := vsim
+# VLSI_SIM_BIN := /tools/mentor/questa/2023.4/linux_x86_64
