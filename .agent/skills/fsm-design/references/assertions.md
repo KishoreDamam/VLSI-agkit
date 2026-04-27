@@ -17,13 +17,16 @@
 Catches simulations where the state register holds a value not in the enum (e.g., after reset escapes or memory corruption in emulation).
 
 ```systemverilog
-// Immediate assertion — checked every cycle
-always @(posedge clk) begin
-    assert (state inside {IDLE, ARB, READ_ISSUE, READ_DATA,
-                          WRITE_ISSUE, WRITE_RESP, ERROR})
-        else $error("Illegal FSM state: %0d at time %0t", state, $time);
-end
+// Concurrent assertion — clocked, synthesisable, accepted by formal tools
+// Place outside any procedural block (module scope or checker).
+assert property (
+    @(posedge clk) disable iff (!rst_n)
+    state inside {IDLE, ARB, READ_ISSUE, READ_DATA,
+                  WRITE_ISSUE, WRITE_RESP, ERROR}
+) else $error("Illegal FSM state: %0d at time %0t", state, $time);
 ```
+
+> **Why not `always @(posedge clk) assert (...)`?** Placing an immediate assertion inside a procedural clock block is supported by some simulators but is semantically ambiguous and is rejected by most formal tools. Use the concurrent `assert property` form for portability.
 
 For one-hot encoded FSMs, check that exactly one bit is set:
 

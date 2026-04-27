@@ -67,17 +67,23 @@ endcase
 
 ## Calculating timeout_val
 
-| Timeout | Clock | Cycles | Bits needed |
-|---|---|---|---|
-| 100 ns | 100 MHz | 10 | 4 |
-| 1 µs | 100 MHz | 100 | 7 |
-| 10 µs | 100 MHz | 1000 | 10 |
-| 100 µs | 100 MHz | 10 000 | 14 |
-| 1 ms | 100 MHz | 100 000 | 17 |
+**Convention:** load value `N` → counter expires after `N+1` clock cycles
+(the load cycle is cycle 1; expiry fires when the counter reaches 0).
 
-**Formula:** `timeout_val = ceil(timeout_ns * clk_freq_hz / 1e9) - 1`
+**Formula:** `timeout_val = ceil(timeout_ns × clk_freq_hz / 1e9) - 1`
 
-The `-1` accounts for the fact that a counter loaded with value N counts N+1 cycles before reaching 0 if the load cycle counts as cycle 1. To be explicit, define the convention in a comment and test it in the testbench.
+The `-1` converts "number of cycles" to "load value" under the N+1 convention.
+
+| Timeout | 100 MHz cycles | Load value (N) | Bits needed |
+|---------|---------------|----------------|-------------|
+| 100 ns  | 10            | 9              | 4           |
+| 1 µs    | 100           | 99             | 7           |
+| 10 µs   | 1 000         | 999            | 10          |
+| 100 µs  | 10 000        | 9 999          | 14          |
+| 1 ms    | 100 000       | 99 999         | 17          |
+
+Document the convention in a comment at the point of use so the next engineer
+doesn't recalculate from scratch.
 
 ---
 
@@ -146,7 +152,9 @@ assign tmr_expired = (tmr_cnt == '0) && !tmr_load;
 //      else if (arb_sel)                next_state = is_write ? WRITE_ISSUE : READ_ISSUE;
 //      else                             next_state = ARB;
 
-// In output block:
-// ARB: tmr_load = (state != ARB);   // load on entry only
-//      busy     = 1'b1;
+// In output block (driven from previous state, not ARB itself):
+// IDLE: tmr_load = (next_state == ARB);  // pulse one cycle on entry to ARB
+//       busy     = 1'b0;
+// ARB:  tmr_load = 1'b0;                 // counter already running
+//       busy     = 1'b1;
 ```

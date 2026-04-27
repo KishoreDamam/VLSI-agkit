@@ -14,7 +14,8 @@ module memctl_fsm (
     input  logic clk,
     input  logic rst_n,       // active-low async reset
     input  logic start,       // initiate a new transaction
-    input  logic is_write,    // 1 = write, 0 = read (unused directly; arb_sel drives path)
+    input  logic is_write,    // retained for AXI channel context; arb_sel encodes actual selection
+                              // synthesis/lint: intentionally unused inside FSM logic
     input  logic arb_sel,     // round-robin arbiter grant (1 = write wins, 0 = read wins)
     input  logic data_valid,  // read data available from downstream
     input  logic resp_ready,  // upstream ready to accept write response

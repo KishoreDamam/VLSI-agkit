@@ -112,7 +112,10 @@ module tb_memctl_fsm;
         check("issue_read in READ_DATA",issue_read, 1'b0);
 
         clk_edge(1);
-        // state = IDLE (data received, cycle complete)
+        // state = IDLE (data received, cycle complete).
+        // data_rdy is state-gated (only high in READ_DATA); it is 0 in IDLE
+        // even if data_valid is still asserted — so order of assignment
+        // vs check does not matter here.
         data_valid = 1'b0;
         check("busy in IDLE (post read)",  busy,        1'b0);
         check("data_rdy in IDLE",          data_rdy,    1'b0);

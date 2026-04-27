@@ -99,7 +99,7 @@ type: coding
   ```
 
 - **Gotchas:**
-  - `unique case` suppresses the tool warning but does NOT eliminate the latch if outputs are missing — it only tells the tool the case is full-coverage; the latch logic is still inferred.
+  - `unique case` on `next_state` with full branch coverage does eliminate the state latch, but it does NOT help output signals that are missing assignments in some branches — those still infer latches. Add `default` output assignments before the `case` regardless.
   - Registered outputs (`always_ff` computing next-cycle value from `next_state`) eliminate the latch concern entirely but add one cycle of latency.
 
 ### Pattern 3 — Timeout counter (separate from FSM)
