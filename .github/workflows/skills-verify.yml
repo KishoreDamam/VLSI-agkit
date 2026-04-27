@@ -103,10 +103,10 @@ jobs:
       - name: List discovered skills (informational)
         run: make list-skills
 
-      - name: Full verify (skips skills without examples/)
+      - name: Full verify (skills with examples/ only)
         run: |
-          # Wave 0 expects most skills to lack examples/. Once Wave 1/2
-          # ship, this step is the gate that catches regressions.
-          # We use `|| true` here ONLY in Wave 0 — remove this fallback
-          # in the first Wave 1 PR that adds an examples/ dir.
-          make verify || true
+          # In Wave 0 there are no examples/ dirs yet, so `make verify`
+          # iterates over an empty list and exits 0. Once Wave 1 lands the
+          # first examples/ dir, this step becomes the regression gate
+          # automatically — no workflow change needed.
+          make verify

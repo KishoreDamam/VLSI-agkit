@@ -58,9 +58,12 @@ mkdir -p "$WORKSPACE"
 MODEL="${VLSI_EVAL_MODEL:-claude-sonnet-4-6}"
 
 cd "$SKILL_CREATOR"
+# Note: skill-creator's run_loop expects --results-dir (not --workspace).
+# Drop $1 (the skill name we already consumed) before forwarding extras.
+shift
 python -m scripts.run_loop \
     --skill-path "$SKILL_PATH" \
     --eval-set "$EVAL_SET" \
     --model "$MODEL" \
-    --workspace "$WORKSPACE" \
+    --results-dir "$WORKSPACE" \
     "$@"

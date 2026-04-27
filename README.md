@@ -87,6 +87,35 @@ Example:
 | `ip-integrator` | IP, bus protocols |
 | `power-analyst` | Power analysis, UPF |
 
+## Verifying skills locally
+
+Each skill that ships a worked example under `examples/` includes a `Makefile`
+that builds, simulates, or lints the example end-to-end. The repo root
+`Makefile` walks every skill and runs each `examples/Makefile` in turn.
+
+```bash
+make help          # Show all targets
+make list-skills   # Print discovered skill list (skips _-prefixed dirs)
+make verify        # Run every skill's examples/Makefile verify target
+```
+
+**Skill discovery:** any subdirectory of `.agent/skills/` is treated as a
+skill, except names starting with `_` (reserved for templates and tooling).
+
+**Simulator selection:** the verify rules use `tools.mk` to pick a simulator
+in this order:
+1. `iverilog` on PATH (default for CI / open-source flows)
+2. `VLSI_SIM` env var (e.g. `VLSI_SIM=xsim` for Vivado xsim)
+3. `VLSI_SIM_BIN` for fully-qualified path overrides
+4. `.agent/tools.local.mk` (per-user, gitignored — see `tools.example.mk`)
+
+To use a vendor simulator without polluting PATH:
+```bash
+cp tools.example.mk .agent/tools.local.mk
+# Edit .agent/tools.local.mk to point at your Vivado/VCS/Questa install
+make verify
+```
+
 ## Documentation
 
 See [ARCHITECTURE.md](.agent/ARCHITECTURE.md) for full details.
