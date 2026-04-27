@@ -17,7 +17,10 @@ WORKSPACE="$REPO_ROOT/.agent/skills/${SKILL_NAME}-workspace"
 # Locate skill-creator. Try common Claude plugin cache locations.
 SKILL_CREATOR=""
 for cand in \
-    "$HOME/.claude/plugins/cache/claude-plugins-official/superpowers/5.0.2/skills/skill-creator" \
+    ${SKILL_CREATOR_PATH:-} \
+    "$HOME/.claude/plugins/cache/claude-plugins-official/skill-creator/"*"/skills/skill-creator" \
+    "$HOME/.claude/plugins/marketplaces/claude-plugins-official/plugins/skill-creator/skills/skill-creator" \
+    "$HOME/.claude/plugins/cache/claude-plugins-official/superpowers/"*"/skills/skill-creator" \
     "$HOME/.claude/plugins/cache/claude-plugins-official/anthropic-skills/"*"/skills/skill-creator" \
     "$APPDATA/Claude/local-agent-mode-sessions/skills-plugin/"*"/"*"/skills/skill-creator" \
     "$LOCALAPPDATA/Claude/local-agent-mode-sessions/skills-plugin/"*"/"*"/skills/skill-creator" \
@@ -49,8 +52,10 @@ fi
 
 mkdir -p "$WORKSPACE"
 
-# Use the model the caller's session is running (let user override via env)
-MODEL="${VLSI_EVAL_MODEL:-claude-opus-4-7}"
+# Default to Sonnet — good rubric signal at ~5x cheaper than Opus.
+# Override with VLSI_EVAL_MODEL=claude-haiku-4-5 (cheaper, noisier) or
+# VLSI_EVAL_MODEL=claude-opus-4-7 (most rigorous).
+MODEL="${VLSI_EVAL_MODEL:-claude-sonnet-4-6}"
 
 cd "$SKILL_CREATOR"
 python -m scripts.run_loop \
