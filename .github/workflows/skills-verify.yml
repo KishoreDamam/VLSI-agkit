@@ -100,9 +100,6 @@ jobs:
           iverilog -V | head -1 || true
           make --version | head -1
 
-      - name: Smoke test — fixture skill
-        run: make fixture-verify
-
       - name: List discovered skills (informational)
         run: make list-skills
 

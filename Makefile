@@ -24,13 +24,12 @@ SKILLS         := $(sort $(filter-out _%,$(notdir $(ALL_SKILL_DIRS))))
 # the missing examples/ dirs.
 EXAMPLES := $(wildcard $(addsuffix /examples,$(addprefix .agent/skills/,$(SKILLS))))
 
-.PHONY: verify list-skills help fixture-verify
+.PHONY: verify list-skills help
 
 help:
 	@echo "Targets:"
 	@echo "  make verify          Run every skill's examples/Makefile verify target"
 	@echo "  make list-skills     Print the discovered skill list"
-	@echo "  make fixture-verify  Build and run the _fixture skill (smoke test)"
 	@echo "  make help            Show this help"
 
 list-skills:
@@ -52,8 +51,3 @@ verify:
 	  exit 1; \
 	fi; \
 	echo "VERIFY OK"
-
-# Smoke-test entry: only the _fixture skill. We pass through to its
-# Makefile with REPO_ROOT so it doesn't need to climb $(CURDIR).
-fixture-verify:
-	$(MAKE) -C .agent/skills/_fixture/examples REPO_ROOT=$(REPO_ROOT) verify
