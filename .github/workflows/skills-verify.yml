@@ -34,45 +34,23 @@ jobs:
         if: runner.os == 'Windows'
         shell: pwsh
         run: |
-          # Primary: Chocolatey package (works on stock GHA windows-latest).
-          $ok = $false
-          try {
-              choco install iverilog -y --no-progress
-              if (Test-Path 'C:\iverilog\bin\iverilog.exe') { $ok = $true }
-          } catch {
-              Write-Host "choco install failed: $_"
-          }
-
-          # Fallback: download a pinned prebuilt zip and extract it.
-          # bleyer.org has historically hosted Windows builds; we pin a
-          # known-good URL here. If both routes fail the job hard-fails
-          # so the maintainer fixes the workflow rather than masking it.
-          if (-not $ok) {
-              $url = 'https://bleyer.org/icarus/iverilog-v12-20220611-x64_setup.exe'
-              $exe = "$env:RUNNER_TEMP\iverilog-setup.exe"
-              Write-Host "Falling back to direct download: $url"
-              Invoke-WebRequest -Uri $url -OutFile $exe
-              # /S = silent install for InnoSetup; default install dir is C:\iverilog
-              Start-Process -FilePath $exe -ArgumentList '/S' -Wait
-              if (Test-Path 'C:\iverilog\bin\iverilog.exe') { $ok = $true }
-          }
-
-          if (-not $ok) {
-              Write-Error "Could not install iverilog via choco or fallback download. Workflow needs maintenance."
+          # Chocolatey is pre-installed on windows-latest. It places binaries
+          # at C:\ProgramData\chocolatey\lib\<pkg>\tools\bin\ and creates shims
+          # at C:\ProgramData\chocolatey\bin\ (already on PATH).
+          choco install iverilog -y --no-progress
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "choco install iverilog failed with exit code $LASTEXITCODE"
               exit 1
           }
-
-          Add-Content -Path $env:GITHUB_PATH -Value 'C:\iverilog\bin'
-
-          # GNU make is not pre-installed on windows-latest. Install via choco.
           choco install make -y --no-progress
-          # Choco places make.exe under C:\ProgramData\chocolatey\bin which is
-          # already on PATH by default on GHA runners.
-
-      - name: Verify iverilog (Windows)
-        if: runner.os == 'Windows'
-        shell: bash
-        run: /c/iverilog/bin/iverilog -V | head -1
+          if ($LASTEXITCODE -ne 0) {
+              Write-Error "choco install make failed with exit code $LASTEXITCODE"
+              exit 1
+          }
+          # Verify the shims resolve (refresh-env style — call the shim by
+          # absolute path to bypass any PATH-cache issues in this step).
+          & "C:\ProgramData\chocolatey\bin\iverilog.exe" -V | Select-Object -First 1
+          & "C:\ProgramData\chocolatey\bin\make.exe" --version | Select-Object -First 1
 
       - name: Show tool versions
         run: |
