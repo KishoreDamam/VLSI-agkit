@@ -37,20 +37,63 @@ jobs:
           # Chocolatey is pre-installed on windows-latest. It places binaries
           # at C:\ProgramData\chocolatey\lib\<pkg>\tools\bin\ and creates shims
           # at C:\ProgramData\chocolatey\bin\ (already on PATH).
-          choco install iverilog -y --no-progress
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "choco install iverilog failed with exit code $LASTEXITCODE"
+          # Note: choco can return exit 0 even on failure ("installed 0/0
+          # packages" on a 408 from the feed), so we verify by Test-Path
+          # rather than $LASTEXITCODE.
+
+          $ivShim = 'C:\ProgramData\chocolatey\bin\iverilog.exe'
+          $ok = $false
+
+          # Try choco up to 3 times — the community feed occasionally 408s.
+          for ($i = 1; $i -le 3; $i++) {
+              Write-Host "choco install iverilog (attempt $i)..."
+              choco install iverilog -y --no-progress
+              if (Test-Path $ivShim) { $ok = $true; break }
+              Write-Host "Attempt $i did not produce $ivShim; retrying in 10s..."
+              Start-Sleep -Seconds 10
+          }
+
+          # Fallback: pinned direct download with a hard timeout so the job
+          # cannot hang for 30+ minutes if the host is unreachable.
+          if (-not $ok) {
+              Write-Host "choco route exhausted; trying direct download (60s timeout)..."
+              try {
+                  $url = 'https://bleyer.org/icarus/iverilog-v12-20220611-x64_setup.exe'
+                  $exe = "$env:RUNNER_TEMP\iverilog-setup.exe"
+                  Invoke-WebRequest -Uri $url -OutFile $exe -TimeoutSec 60
+                  Start-Process -FilePath $exe -ArgumentList '/S' -Wait
+                  if (Test-Path 'C:\iverilog\bin\iverilog.exe') {
+                      Add-Content -Path $env:GITHUB_PATH -Value 'C:\iverilog\bin'
+                      $ivShim = 'C:\iverilog\bin\iverilog.exe'
+                      $ok = $true
+                  }
+              } catch {
+                  Write-Host "Direct download failed: $_"
+              }
+          }
+
+          if (-not $ok) {
+              Write-Error "Could not install iverilog via choco or fallback. Workflow needs maintenance."
               exit 1
           }
-          choco install make -y --no-progress
-          if ($LASTEXITCODE -ne 0) {
-              Write-Error "choco install make failed with exit code $LASTEXITCODE"
+
+          # GNU make — also retry on transient feed errors.
+          $mkShim = 'C:\ProgramData\chocolatey\bin\make.exe'
+          $mkOk = $false
+          for ($i = 1; $i -le 3; $i++) {
+              Write-Host "choco install make (attempt $i)..."
+              choco install make -y --no-progress
+              if (Test-Path $mkShim) { $mkOk = $true; break }
+              Start-Sleep -Seconds 10
+          }
+          if (-not $mkOk) {
+              Write-Error "Could not install make via choco."
               exit 1
           }
-          # Verify the shims resolve (refresh-env style — call the shim by
-          # absolute path to bypass any PATH-cache issues in this step).
-          & "C:\ProgramData\chocolatey\bin\iverilog.exe" -V | Select-Object -First 1
-          & "C:\ProgramData\chocolatey\bin\make.exe" --version | Select-Object -First 1
+
+          # Sanity check both binaries.
+          & $ivShim -V | Select-Object -First 1
+          & $mkShim --version | Select-Object -First 1
 
       - name: Show tool versions
         run: |
