@@ -35,46 +35,28 @@ type: coding
 - **Code:**
 
   ```systemverilog
-  typedef enum logic [2:0] {
-      IDLE, REQ, ACTIVE, DRAIN, DONE, ERR
-  } state_t;
-
+  typedef enum logic [2:0] { IDLE, REQ, ACTIVE, DRAIN, DONE, ERR } state_t;
   state_t state, next_state;
 
-  // Process 1: state register (async active-low reset)
+  // Process 1: state register
   always_ff @(posedge clk or negedge rst_n) begin
       if (!rst_n) state <= IDLE;
       else        state <= next_state;
   end
 
-  // Process 2: next-state logic — MUST cover all states and all outputs
+  // Process 2: next-state logic (default-before-case, covers all states)
   always_comb begin
-      next_state = state;          // default: hold
+      next_state = state;
       case (state)
           IDLE:   if (start)       next_state = REQ;
           REQ:    if (grant)       next_state = ACTIVE;
           ACTIVE: if (done)        next_state = DRAIN;
                   else if (err_in) next_state = ERR;
           DRAIN:                   next_state = DONE;
-          DONE:                    next_state = IDLE;
-          ERR:                     next_state = IDLE;  // or hold until reset
           default:                 next_state = IDLE;
       endcase
   end
-
-  // Process 3: output logic — assign ALL outputs in EVERY branch (no latches)
-  always_comb begin
-      // defaults first
-      busy     = 1'b0;
-      req_out  = 1'b0;
-      data_rdy = 1'b0;
-      case (state)
-          REQ:    req_out  = 1'b1;
-          ACTIVE: begin busy = 1'b1; req_out = 1'b1; end
-          DRAIN:  begin busy = 1'b1; data_rdy = 1'b1; end
-          default: ;   // defaults already applied above
-      endcase
-  end
+  // Process 3: output logic — see references/encoding-tradeoffs.md §Three-process
   ```
 
 - **Gotchas:**
