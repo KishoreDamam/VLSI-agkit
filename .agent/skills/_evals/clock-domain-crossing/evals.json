@@ -1,0 +1,41 @@
+{
+  "skill_name": "clock-domain-crossing",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I have a 32-bit data bus going from a 50 MHz domain to a 200 MHz domain. The data is updated every ~1 us. What CDC scheme should I use and why? Show me the SystemVerilog.",
+      "expected_output": "Recommends async FIFO for multi-bit (or handshake-based MUX with valid synchronizer for slow-changing data); rejects naive 2FF on 32 bits due to bit-skew; shows code with proper Gray-coded pointers if FIFO route taken.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "Spyglass is flagging CDC violations on my reset_n net that crosses three clock domains. What's the right way to handle async reset deassertion across multiple domains?",
+      "expected_output": "Per-domain reset synchronizer (2FF deassert with async assert), one synchronizer per destination clock; Spyglass waiver for the assert path; SDC false_path to the synchronizer's first FF D pin.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Walk me through implementing a request/acknowledge handshake CDC for sending a single 16-bit configuration value from a slow domain (10 MHz) to a fast domain (500 MHz).",
+      "expected_output": "Source side: register data, pulse req. Synchronize req into dst clock. Destination samples data, asserts ack. Sync ack back to source. Source clears req when ack seen. Includes timing diagram and minimum-pulse-width constraint.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Explain why a 2-flop synchronizer doesn't work for buses, even if the bus changes slowly. Include the exact failure mode.",
+      "expected_output": "Per-bit metastability resolution is independent; bits can resolve to different values on the same cycle producing transient garbage; only safe for: single-bit (with stable-on-no-change), Gray-coded, or async-FIFO data.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "Write the SDC constraints for an async FIFO with a 100 MHz write clock and a 250 MHz read clock. Include the gray pointer crossings.",
+      "expected_output": "create_clock for both, set_clock_groups -asynchronous (or set_false_path between), set_max_delay -datapath_only on the gray-pointer paths to bound them under the destination period.",
+      "files": []
+    },
+    {
+      "id": 6,
+      "prompt": "What's the difference between false_path and max_delay -datapath_only for CDC paths, and when do I use which?",
+      "expected_output": "false_path: timing analyzer skips entirely — fine for 2FF if you trust the synchronizer; risk: tools may route absurdly long paths. max_delay -datapath_only: bounds the source-to-destination path while excluding clock skew — preferred for FIFO/handshake data buses where you need a finite time-of-flight bound.",
+      "files": []
+    }
+  ]
+}

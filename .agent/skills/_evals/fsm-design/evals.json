@@ -1,0 +1,35 @@
+{
+  "skill_name": "fsm-design",
+  "evals": [
+    {
+      "id": 1,
+      "prompt": "I'm building a memory controller and need an FSM that handles read/write requests with these states: IDLE, ARB (arbitrate between read and write queues), READ_ISSUE, READ_DATA, WRITE_ISSUE, WRITE_RESP, ERROR. The arbiter is round-robin. Write the SystemVerilog FSM with proper coding style — separate state register, next-state logic, and output logic.",
+      "expected_output": "Three-process FSM in SystemVerilog with enum typedef, separate combinational next-state and output blocks, sequential state register with sync reset, all next-state assignments cover the case (no inferred latches).",
+      "files": []
+    },
+    {
+      "id": 2,
+      "prompt": "My UART receiver FSM is inferring latches in synthesis. The states are IDLE, START, DATA, STOP. Show me what's likely wrong and the corrected version.",
+      "expected_output": "Diagnoses missing default assignments / incomplete case coverage; provides corrected FSM with default assignments at top of comb block or full case + all output assignments in every branch.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "prompt": "Should I use one-hot or binary encoding for an 8-state FSM that's on a critical path? Targeting Xilinx Ultrascale+. Explain the tradeoff.",
+      "expected_output": "Compares one-hot vs binary on FPGAs (FF cost, decode-fanout, fmax), notes Vivado's auto-encoding default (often one-hot for ≤32 states), recommends one-hot for critical paths, mentions ENUM-based debugging benefit.",
+      "files": []
+    },
+    {
+      "id": 4,
+      "prompt": "Code review: this is my AXI-Lite slave write FSM. Spot any bugs.\n\n```sv\nalways_ff @(posedge clk) begin\n  case (state)\n    IDLE: if (awvalid) state <= WRITE;\n    WRITE: if (wvalid) state <= RESP;\n    RESP: if (bready) state <= IDLE;\n  endcase\nend\n```",
+      "expected_output": "Catches: no reset, no default for state, awready/wready/bvalid not driven from FSM (handshake bug), missing default state, single-process style mixing comb and seq.",
+      "files": []
+    },
+    {
+      "id": 5,
+      "prompt": "I have an FSM that needs to wait for a programmable timeout (configurable from 100ns to 10us). What's the cleanest way to add a timeout state without bloating the FSM?",
+      "expected_output": "Suggests a separate timeout counter with load/expire signals; FSM uses timeout_expired as a transition condition. Shows the counter+FSM code.",
+      "files": []
+    }
+  ]
+}
