@@ -19,7 +19,7 @@ class axi_lite_scoreboard extends uvm_scoreboard;
     `uvm_component_utils(axi_lite_scoreboard)
 
     // Two independent FIFOs decouple write() (zero-time, from monitor) from
-    // get() (blocking, in the compare loop).  Each FIFO is unbounded and thread-safe.
+    // get() (blocking, in the compare loop). FIFOs are unbounded uvm_components.
     uvm_tlm_analysis_fifo #(axi_lite_seq_item) expected_fifo;
     uvm_tlm_analysis_fifo #(axi_lite_seq_item) actual_fifo;
 
@@ -32,7 +32,8 @@ class axi_lite_scoreboard extends uvm_scoreboard;
     endfunction
 
     // build_phase: create both FIFOs.
-    // FIFOs use new() -- they are TLM objects, not factory-managed components.
+    // uvm_tlm_analysis_fifo IS a uvm_component (has parent); new() is acceptable
+    // because FIFO type overrides are never needed in practice.
     function void build_phase(uvm_phase phase);
         super.build_phase(phase);
         expected_fifo = new("expected_fifo", this);
