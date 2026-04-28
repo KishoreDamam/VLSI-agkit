@@ -28,9 +28,38 @@ The `.agent/` folder is **tool-agnostic** — the agents, skills, and workflows 
 | Tool | How it discovers the kit | Slash commands |
 |---|---|---|
 | **Claude Code** | Reads `.claude/commands/*.md` for slash commands; agents reference `.agent/` paths | ✅ Built-in (`/design`, `/verify`, etc.) |
+| **Google Antigravity** | Reads `AGENTS.md` at project root pointing at `.agent/`; agent personas and skills load on demand | ✅ Via workflow files in `.agent/workflows/` |
 | **Gemini CLI** | Reads `GEMINI.md` at project root (auto-copied by `init`); follows the rules to load agents/skills from `.agent/` | ✅ Via `GEMINI.md` routing |
 | **Cursor** | Add `.cursorrules` or `.cursor/rules/vlsi.mdc` pointing at `.agent/` (see snippet below) | ⚠️ Manual — invoke via `@.agent/workflows/<name>.md` |
 | **GitHub Copilot Chat** | Add `.github/copilot-instructions.md` pointing at `.agent/` (see snippet below) | ⚠️ Manual — reference via `#file:.agent/workflows/<name>.md` |
+
+### Google Antigravity setup
+
+Create `AGENTS.md` at your project root:
+
+```markdown
+# Project: VLSI Front-End Development
+
+This project uses the VLSI Agent Kit at `.agent/`. Specialist agents and skills
+are defined in Markdown and load on demand.
+
+## Agents
+See `.agent/agents/<name>.md` — 14 specialists covering RTL design, verification,
+synthesis, timing, FPGA, ASIC, debug, and integration.
+
+## Skills
+See `.agent/skills/<name>/SKILL.md` — 18 domain skills with deep `references/`
+and runnable `examples/` per skill.
+
+## Workflows
+See `.agent/workflows/<name>.md` — 10 multi-step procedures for common tasks
+(design, verify, synthesize, debug, lint, timing, review, integrate, plan,
+brainstorm).
+
+## Routing
+Pick the matching agent based on task keywords; load the skills listed in the
+agent's frontmatter; consult workflows for end-to-end procedures.
+```
 
 ### Cursor setup
 
