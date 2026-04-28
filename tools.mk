@@ -65,6 +65,13 @@ $(error No SystemVerilog simulator found on PATH. Expected one of: xsim, iverilo
 endif
 
 # 6. Tier-aware skips (do NOT depend on simulator)
+ifeq ($(tier),tool-output)
+SIM_VERIFY_TARGET := tool-output-skip
+SIM_CLEAN         := :
+tool-output-skip:
+	@echo "tool-output: no automated check — review constraints manually"
+endif
+
 ifeq ($(tier),manual-review)
 SIM_VERIFY_TARGET := manual-review-skip
 SIM_CLEAN         := :
