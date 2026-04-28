@@ -15,7 +15,11 @@ module tb_sync_2ff;
     // Parameters matching DUT instantiation
     localparam int WIDTH  = 1;
     localparam int STAGES = 2;
-    localparam int MAX_WAIT = STAGES + 2;  // cycles before we call it a failure
+    // STAGES+3: d is driven 30% into a cycle (async), so earliest capture is
+    // the *next* posedge. The loop starts counting one cycle after the drive,
+    // leaving STAGES+2 full cycles for propagation — one more than strictly
+    // required, giving one cycle of slack for back-to-back metastability.
+    localparam int MAX_WAIT = STAGES + 3;
 
     // Destination clock: 10 ns period (100 MHz)
     localparam real DST_PERIOD = 10.0;
@@ -102,12 +106,11 @@ module tb_sync_2ff;
         end
 
         // ── Final report ──────────────────────────────────────────────────
-        if (failed == 0)
-            $display("PASS");
-        else
-            $display("FAIL: %0d test(s) failed", failed);
-
-        $finish;
+        if (failed == 0) begin
+            $display("PASS"); $finish;
+        end else begin
+            $display("FAIL: %0d test(s) failed", failed); $finish;
+        end
     end
 
     // Timeout watchdog — bail after 200 cycles to avoid infinite simulation

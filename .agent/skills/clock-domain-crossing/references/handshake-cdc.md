@@ -66,6 +66,7 @@ module handshake_cdc #(
 
     assign src_busy = req_src;
 
+    // ack travels dst→src; clk_src is the *destination* for this synchronizer
     sync_2ff #(.WIDTH(1)) u_ack_sync (
         .clk_dst(clk_src), .rst_n(rst_src_n),
         .d(ack_dst_reg), .q(ack_src_sync)

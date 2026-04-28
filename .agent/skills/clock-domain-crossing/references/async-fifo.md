@@ -120,13 +120,26 @@ module async_fifo #(
     // Empty: read gray == synchronized write gray (same address + same wrap bit)
     assign rd_empty = (rd_ptr_gray == wr_ptr_gray_sync);
 
-    // Full: MSB and MSB-1 differ, lower bits equal (Clifford Cummings style)
+    // Full: MSB and MSB-1 differ, lower bits equal (Clifford Cummings style).
+    // REQUIRES DEPTH to be a power of two — the Gray sequence symmetry this
+    // relies on breaks for non-power-of-two depths, silently misfiring full.
     assign wr_full = (wr_ptr_gray[AW]   != rd_ptr_gray_sync[AW]  ) &&
                      (wr_ptr_gray[AW-1] != rd_ptr_gray_sync[AW-1]) &&
                      (wr_ptr_gray[AW-2:0] == rd_ptr_gray_sync[AW-2:0]);
 
+    // Guard: fail elaboration for non-power-of-two depths.
+    initial begin
+        assert ($onehot(DEPTH))
+            else $fatal(1, "async_fifo: DEPTH must be a power of two; got %0d", DEPTH);
+    end
+
 endmodule
 ```
+
+> **⚠ DEPTH must be a power of two.** The full-flag comparison above is derived
+> from the Gray-code symmetry that only exists for power-of-two sizes. Passing
+> a non-power-of-two DEPTH produces silent full-flag misfires and data corruption.
+> The `$fatal` assertion catches this at elaboration time.
 
 **Reference:** Clifford Cummings, "Simulation and Synthesis Techniques for
 Asynchronous FIFO Design," SNUG 2002 — the definitive full/empty flag derivation.

@@ -164,5 +164,9 @@ endmodule
 period — but only one pulse can be in-flight at a time (source must not re-pulse
 until the previous toggle is visible in the destination).
 
-**Throughput:** Maximum pulse rate ≈ `f_dst / (STAGES + 1)` to guarantee no
-missed pulses (handshake limited by synchronizer latency).
+**Throughput:** Source must not re-pulse within `(STAGES + 1)` destination clock
+periods of the previous pulse. For same-frequency domains this gives a maximum
+rate of `f_dst / (STAGES + 1)`. For fast-source / slow-destination, express
+the constraint in source cycles: `ceil((STAGES + 1) × T_dst / T_src)` source
+cycles between pulses. Example: STAGES=2, 500 MHz src / 10 MHz dst →
+`ceil(3 × 100 ns / 2 ns) = 150` source cycles between pulses.

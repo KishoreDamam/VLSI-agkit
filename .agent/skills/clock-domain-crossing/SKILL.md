@@ -1,7 +1,7 @@
 ---
 name: "clock-domain-crossing"
 description: "CDC techniques — synchronizers, async FIFOs, handshake protocols, and SDC constraints for safe multi-clock designs."
-type: coding
+type: flow
 ---
 
 # Clock Domain Crossing
@@ -149,8 +149,10 @@ and others at 1000, producing 0000, 0001, 0110, 1010 … etc. transiently.
 - **Gotchas:**
   - Source must hold `req` asserted until ack returns — typically 4–6 destination
     cycles round-trip.
-  - For fast-to-slow crossing (e.g. 500 MHz → 10 MHz), the source must hold
-    `req` for ≥ `2 × T_dst + 1 × T_src` before sampling the synchronized ack.
+  - For fast-to-slow crossing (e.g. 500 MHz → 10 MHz): source must hold `req`
+    stable for at least `ceil(T_dst / T_src) + 1` source cycles so the
+    destination can sample it cleanly. Example: 500 MHz src / 10 MHz dst →
+    hold for `ceil(100 ns / 2 ns) + 1 = 51` source cycles minimum.
   - Data path SDC: `set_max_delay -datapath_only ≤ T_dst` from `data_hold` to
     destination capture FF.
 
