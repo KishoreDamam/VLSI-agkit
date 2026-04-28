@@ -1,245 +1,244 @@
 ---
-name: systemverilog-patterns
-description: SystemVerilog best practices, interfaces, packages, and modern constructs.
+name: "systemverilog-patterns"
+description: "SystemVerilog coding patterns: logic/reg/wire rules, interfaces, always blocks, generate, struct drivers, and anti-patterns."
+type: coding
 ---
 
 # SystemVerilog Patterns
 
-> Modern SystemVerilog (SV2017) coding patterns for VLSI design.
+> Canonical SV2017 coding patterns for RTL design: data types, interfaces, procedural blocks, and generate constructs.
+
+## When to use
+
+- You are writing new RTL and need the correct SV type (`logic` vs `reg` vs `wire`).
+- You need a parameterized interface with valid/ready handshake and modports.
+- You are getting "multiple drivers" errors on struct fields from two `always` blocks.
+- You need to know when `always_comb` vs `always @*` vs `always @(...)` causes simulation/synthesis mismatch.
+- You are building a pipelined module where the number of stages is a parameter.
+- You are migrating Verilog-2001 code to SystemVerilog.
+
+## Quick reference
+
+| Pattern | Use when | Anti-pattern |
+|---|---|---|
+| `logic` everywhere | All new RTL signals | `reg` / `wire` in new SV code |
+| `always_ff` + `<=` | Clocked sequential | `always @(posedge clk)` + `=` |
+| `always_comb` + default assign | Combinational logic | `always @(...)` manual sensitivity |
+| `always_latch` | Intentional latch only | Accidental latch from missing `else` |
+| Interface + modports | Multi-signal bus | Flat port lists for reused buses |
+| One `always_ff` per struct | Whole struct per block | One field per block → multiple drivers |
+| `generate-for` + `genvar` | N identical hardware copies | Copy-pasted blocks for each N |
+| `initial assert (P >= 1)` | Parameter validation | Silent wrong-parameter elaboration |
+
+## Core patterns
+
+### 1. logic vs reg vs wire — the one rule
+
+**Use when:** declaring any RTL signal, input/output port, or combinational wire.
+
+```systemverilog
+// NEW SV: use logic for everything
+logic        clk, rst_n, valid;
+logic [31:0] data;
+
+always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) data <= '0;
+    else        data <= data_in;
+end
+
+assign count_next = count + 1;  // continuous assign: logic is fine
+```
+
+- **Gotchas:**
+  - `reg` does not imply a flip-flop in Verilog-2001; `logic` is cleaner and compiler-enforced.
+  - Use `wire` only for tri-state nets or legacy module port connections.
+  - `logic` rejects multiple `always_*` drivers at compile time — use this feature.
+
+> Full type reference (packed/unpacked arrays, structs, unions, typedef): `references/data-types.md`.
 
 ---
 
-## Interfaces
+### 2. Parameterized interface with valid/ready modports
 
-### Defining Interfaces
+**Use when:** connecting a producer and consumer with a multi-signal handshake bus.
 
 ```systemverilog
-interface axi_stream_if #(
-    parameter int DATA_WIDTH = 32
-) (
-    input logic clk,
-    input logic rst_n
+interface valid_ready_if #(parameter int DATA_WIDTH = 32) (
+    input logic clk, rst_n
 );
-    logic [DATA_WIDTH-1:0] tdata;
-    logic                  tvalid;
-    logic                  tready;
-    logic                  tlast;
-    
-    modport master (
-        output tdata, tvalid, tlast,
-        input  tready
-    );
-    
-    modport slave (
-        input  tdata, tvalid, tlast,
-        output tready
-    );
+    logic                  valid, ready;
+    logic [DATA_WIDTH-1:0] data;
+
+    modport producer (input clk, rst_n, output valid, data, input ready);
+    modport consumer (input clk, rst_n, input valid, data, output ready);
 endinterface
+
+// Instantiation at top level or testbench:
+valid_ready_if #(.DATA_WIDTH(64)) u_bus (.clk(clk), .rst_n(rst_n));
+my_producer u_prod (.bus(u_bus.producer));
+my_consumer u_cons (.bus(u_bus.consumer));
 ```
 
-### Using Interfaces
+- **Gotchas:**
+  - iverilog 12 does not support `interface_type.modport_name` in module port declarations. Use full vendor simulators (VCS, Questa, Xsim) or omit the modport specifier in the port for iverilog.
+  - Clock and reset are passed as inputs to the interface — they are not generated inside it.
+  - Modports enforce direction at instantiation; a wrong-direction assignment is a compile error.
 
-```systemverilog
-module producer (
-    input  logic              clk,
-    input  logic              rst_n,
-    axi_stream_if.master      m_axis
-);
-    // Use m_axis.tdata, m_axis.tvalid, etc.
-endmodule
-```
+> See `examples/valid_ready_if.sv` for the full producer/consumer implementation.
+> Deep reference: `references/interfaces-and-modports.md`.
 
 ---
 
-## Packages
+### 3. Multiple drivers on struct fields — the correct patterns
+
+**Use when:** two `always_ff` blocks each drive a different field of the same packed struct.
 
 ```systemverilog
-package my_pkg;
-    // Parameters
-    parameter int DATA_WIDTH = 32;
-    
-    // Types
-    typedef enum logic [1:0] {
-        CMD_READ  = 2'b00,
-        CMD_WRITE = 2'b01,
-        CMD_RMW   = 2'b10
-    } cmd_t;
-    
-    typedef struct packed {
-        logic [15:0] addr;
-        logic [15:0] data;
-        cmd_t        cmd;
-    } request_t;
-    
-    // Functions
-    function automatic logic [7:0] crc8(input logic [63:0] data);
-        // CRC calculation
-    endfunction
-endpackage
+// WRONG: two blocks each driving one field of the same struct
+// -> "multiple drivers" error
+typedef struct packed { logic [15:0] addr; logic [15:0] data; } pkt_t;
+logic pkt_t pkt;                            // illegal: same signal, two drivers
+always_ff @(posedge clk) pkt.addr <= a;    // driver 1
+always_ff @(posedge clk) pkt.data <= d;    // driver 2 — ERROR
+
+// CORRECT pattern A: one always_ff drives the whole struct
+always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) begin pkt.addr <= '0; pkt.data <= '0; end
+    else        begin pkt.addr <= a;  pkt.data <= d;  end
+end
+
+// CORRECT pattern B: split into separate logic variables
+logic [15:0] pkt_addr, pkt_data;
+always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) pkt_addr <= '0;
+    else        pkt_addr <= a;
+end
+always_ff @(posedge clk or negedge rst_n) begin
+    if (!rst_n) pkt_data <= '0;
+    else        pkt_data <= d;
+end
+assign pkt = {pkt_addr, pkt_data};   // combine at the wire level
 ```
+
+- **Gotchas:**
+  - SystemVerilog requires single-driver semantics per `logic` variable — even individual fields of a packed struct are part of the same signal.
+  - Pattern B is preferred when the two fields are driven by logically independent state machines.
 
 ---
 
-## Structs and Unions
+### 4. always_comb vs always @\* vs always @(...)
 
-### Packed Struct
-
-```systemverilog
-typedef struct packed {
-    logic [3:0]  tag;
-    logic [11:0] addr;
-    logic [15:0] data;
-} packet_t;  // Total: 32 bits, synthesizable
-```
-
-### Unpacked Struct
+**Use when:** choosing which procedural block to use for combinational logic.
 
 ```systemverilog
-typedef struct {
-    int          count;
-    string       name;
-    logic [31:0] data;
-} debug_info_t;  // For verification only
-```
-
----
-
-## Assertions
-
-### Immediate Assertions
-
-```systemverilog
+// BEST: always_comb — tool-checked, full auto-sensitivity
 always_comb begin
-    assert (count <= MAX_COUNT)
-        else $error("Count overflow");
+    y = '0;           // default prevents latch
+    if (sel) y = a;
+end
+
+// LEGACY OK: always @* — auto-sensitivity, no latch check
+always @(*) begin
+    y = '0;
+    if (sel) y = a;
+end
+
+// DANGEROUS: manual sensitivity — simulation/synthesis mismatch risk
+always @(sel) begin   // BUG: b not listed
+    y = a & b;        // synthesis: correct; simulation: stale when b changes
 end
 ```
 
-### Concurrent Assertions
+- **Gotchas:**
+  - `always @(...)` missing a signal causes synthesis to be correct but simulation to be wrong — the hardest class of mismatch to debug.
+  - `always_comb` reports a latch if any output is undriven on some path; `always @*` does not.
+  - `always_comb` includes signals read inside function calls in the sensitivity list; `always @*` behavior for functions is tool-dependent.
 
-```systemverilog
-// Property: valid followed by ready within 10 cycles
-property p_handshake;
-    @(posedge clk) disable iff (!rst_n)
-    valid |-> ##[1:10] ready;
-endproperty
-
-assert property (p_handshake)
-    else $error("Handshake timeout");
-
-cover property (p_handshake);
-```
-
-### Common Sequences
-
-```systemverilog
-// Request followed by grant
-sequence s_req_grant;
-    req ##[1:5] grant;
-endsequence
-
-// Burst of N transfers
-sequence s_burst(n);
-    valid [*n];
-endsequence
-```
+> Detailed comparison with latch-inference rules: `references/always-blocks.md`.
 
 ---
 
-## Generate Constructs
+### 5. Pipelined module with N stages using generate-for
 
-### For Generate
-
-```systemverilog
-genvar i;
-generate
-    for (i = 0; i < N; i++) begin : gen_stage
-        pipeline_stage u_stage (
-            .clk   (clk),
-            .in    (stage_data[i]),
-            .out   (stage_data[i+1])
-        );
-    end
-endgenerate
-```
-
-### If Generate
+**Use when:** building an N-stage data pipeline where N is a compile-time parameter.
 
 ```systemverilog
-generate
-    if (USE_BRAM) begin : gen_bram
-        bram_memory u_mem (...);
-    end else begin : gen_lutram
-        lutram_memory u_mem (...);
-    end
-endgenerate
-```
-
----
-
-## Functions and Tasks
-
-### Functions (Combinational)
-
-```systemverilog
-function automatic logic [7:0] gray2bin(
-    input logic [7:0] gray
+module pipeline #(parameter int STAGES = 4, parameter int WIDTH = 32) (
+    input  logic             clk, rst_n,
+    input  logic [WIDTH-1:0] data_in,
+    output logic [WIDTH-1:0] data_out
 );
-    logic [7:0] bin;
-    bin[7] = gray[7];
-    for (int i = 6; i >= 0; i--)
-        bin[i] = bin[i+1] ^ gray[i];
-    return bin;
-endfunction
-```
+    initial assert (STAGES >= 1)
+        else $fatal(1, "pipeline: STAGES must be >= 1");
 
-### Tasks (Procedural)
+    logic [WIDTH-1:0] stage [0:STAGES-1];
+    assign data_out = stage[STAGES-1];
 
-```systemverilog
-task automatic wait_cycles(input int n);
-    repeat (n) @(posedge clk);
-endtask
-```
-
----
-
-## Parameterization
-
-### Type Parameters
-
-```systemverilog
-module fifo #(
-    parameter type DATA_T = logic [31:0],
-    parameter int  DEPTH  = 16
-) (
-    input  DATA_T i_data,
-    output DATA_T o_data
-);
+    genvar i;
+    generate
+        for (i = 0; i < STAGES; i++) begin : gen_pipe
+            always_ff @(posedge clk or negedge rst_n) begin
+                if (!rst_n)  stage[i] <= '0;
+                else if (i == 0) stage[i] <= data_in;
+                else             stage[i] <= stage[i-1];
+            end
+        end
+    endgenerate
 endmodule
-
-// Usage
-fifo #(.DATA_T(my_struct_t), .DEPTH(32)) u_fifo (...);
 ```
 
----
+- **Gotchas:**
+  - Avoid `assign stage[0] = data_in` when `stage` is a `logic` array — some tools reject continuous assignment to array elements. Use the `i == 0` branch in `always_ff` instead.
+  - Label generate blocks (`gen_pipe`) for hierarchical references and waveform viewers.
+  - Parameter validation with `$fatal` runs at elaboration and gives a clear error.
 
-## Useful Constructs
-
-| Construct | Use |
-|-----------|-----|
-| `unique case` | No overlap, tool checks |
-| `priority case` | Intentional priority |
-| `$clog2(N)` | Log2 ceiling |
-| `$bits(T)` | Bit width of type |
-| `$size(A)` | Array size |
-| `'0`, `'1`, `'x` | Fill patterns |
+> Edge cases, nested generate, and hierarchical references: `references/generate-constructs.md`.
+> Self-checking testbench: `examples/tb_pipeline.sv`.
 
 ---
 
-## Best Practices
+## Anti-patterns (do NOT do this)
 
-- Use `logic` instead of `reg`/`wire`
-- Use `always_ff`, `always_comb`, `always_latch`
-- Use interfaces for complex buses
-- Use packages for shared types
-- Use assertions throughout
+1. **`reg` or `wire` in new SystemVerilog** — `logic` is the universal replacement; `reg`/`wire` add confusion without benefit in SV.
+2. **Blocking assignment (`=`) in `always_ff`** — causes simulation/synthesis mismatch; NBA (`<=`) is required in clocked blocks. (IEEE 1800-2017 §10.4.2)
+3. **`always @(...)` with manual sensitivity lists in RTL** — one missing signal is a latent simulation bug that synthesis silently "fixes," masking the error.
+4. **Driving struct fields from multiple `always` blocks** — each `logic` variable has exactly one driver rule; sub-field assignment does not bypass this.
+5. **No default assignment in `always_comb`** — any undriven output path infers a latch; assign defaults at the top of the block.
+6. **Interfaces with hardcoded widths** — parameterize `DATA_WIDTH` from day one; retrofitting requires changing the interface and all connected modules.
+
+---
+
+## Validation checklist (before declaring code "done")
+
+- [ ] All RTL signals use `logic`; no `reg` or `wire` except for wired nets or legacy ports.
+- [ ] All clocked blocks use `always_ff` with non-blocking assignment (`<=`).
+- [ ] All combinational blocks use `always_comb` with a default assignment before the `case`/`if`.
+- [ ] No manual sensitivity lists in RTL (`always @(a, b, ...)` → `always_comb`).
+- [ ] Each `logic` signal is driven by exactly one `always_ff` or one `always_comb` or one `assign`.
+- [ ] Parameterized modules have `initial assert` parameter checks with `$fatal`.
+- [ ] Generate blocks have unique labels for hierarchical reference.
+- [ ] Interface ports include clock and reset as inputs; modports list them under `input`.
+- [ ] Packed structs used in hardware are `typedef struct packed`; unpacked structs are TB-only.
+
+---
+
+## Citations
+
+- IEEE 1800-2017 §6.11.2 — `logic` type: 4-state variable, single-driver enforcement.
+- IEEE 1800-2017 §9.2.2.2 — `always_comb`: automatic sensitivity, latch inference check.
+- IEEE 1800-2017 §9.2.2.4 — `always_ff`: sequential sensitivity enforcement.
+- IEEE 1800-2017 §10.4.2 — Non-blocking assignment semantics in clocked blocks.
+- IEEE 1800-2017 §7.4.1 — Packed struct bit layout: first-declared field = MSB.
+- IEEE 1800-2017 §25 — Interface definitions, modports, clocking blocks.
+
+---
+
+## See also
+
+- `references/data-types.md` — logic/reg/wire migration, packed/unpacked arrays, structs, unions, typedef
+- `references/interfaces-and-modports.md` — parameterized interfaces, modports, clocking blocks, synthesis gotchas
+- `references/always-blocks.md` — always_ff/always_comb/always_latch vs always @\*; latch inference; simulation/synthesis mismatch
+- `references/generate-constructs.md` — generate-for/if, parameter validation, pipelined arrays, hierarchical references
+- `examples/valid_ready_if.sv` — parameterized valid/ready interface with producer + consumer modports (requires VCS/Questa/Xsim; iverilog limitation noted)
+- `examples/pipeline.sv` — N-stage pipeline using generate-for
+- `examples/tb_pipeline.sv` — self-checking testbench for pipeline.sv; runs with iverilog -g2012
