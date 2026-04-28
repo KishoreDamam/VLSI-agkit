@@ -1,180 +1,222 @@
 ---
-name: synthesis-guidelines
-description: Synthesis-friendly RTL coding and optimization techniques.
+name: "synthesis-guidelines"
+description: "Synthesis-friendly RTL coding, synthesis directives, timing optimization, and gate-level sim readiness for Vivado and Design Compiler."
+type: flow
 ---
 
 # Synthesis Guidelines
 
-> Write RTL that synthesizes efficiently.
+> End-to-end checklist for writing RTL that synthesizes correctly, meets timing, and produces a gate-level netlist ready for simulation — covering Vivado and Design Compiler (DC/Genus).
+
+## When to use
+
+- Writing new RTL that must synthesize without latches, loops, or resource-inference surprises
+- Selecting or verifying synthesis attributes (`use_dsp`, `ram_style`, `dont_touch`)
+- Debugging timing violations (WNS < 0) after synthesis
+- Preparing a netlist for gate-level simulation (GLS)
+
+## Pre-requisites
+
+- **Inputs:** RTL source files (SystemVerilog preferred), target technology (FPGA part or ASIC library), clock frequency goal
+- **Tool versions:** Vivado 2022.1+ or Synopsys DC 2022.03+ / Cadence Genus 21.1+
+- **Prior skills:** `timing-constraints` (SDC must exist before synthesis run)
+
+## Procedure
+
+### Step 1 — Write synthesis-friendly RTL
+
+Use `always_ff` for all sequential logic; use `always_comb` with default assignments for all combinational logic to prevent latch inference.
+
+- Reset: single `rst_n`, asynchronous active-low. Canonical form:
+  ```systemverilog
+  always_ff @(posedge clk or negedge rst_n) begin
+      if (!rst_n) q <= '0;
+      else        q <= d;
+  end
+  ```
+- Never use `initial` blocks in synthesized RTL — they are simulation-only and are silently ignored by synthesis; missing reset coverage causes X-propagation in GLS.
+- Avoid combinational loops: any path where a combinational output feeds back to its own input without a register. Break every loop with a register.
+- Prevent latches with default assignment:
+  ```systemverilog
+  always_comb begin
+      decoded = '0;        // default — no latch regardless of case branches
+      unique case (opcode)
+          OP_ADD: decoded = ADD_CTRL;
+          OP_MUL: decoded = MUL_CTRL;
+      endcase
+  end
+  ```
+- `interface` + `modport` are synthesizable; `virtual interface` and class-context interfaces are sim-only.
+
+**How to verify:** Synthesis log shows zero "latch inferred" and zero "combinational loop" warnings.
 
 ---
 
-## Synthesis-Friendly Coding
+### Step 2 — Apply synthesis attributes/directives
 
-### Clock and Reset
+Place attributes immediately before the declaration or module header they govern.
 
-```systemverilog
-// ✅ Recommended: Single clock edge
-always_ff @(posedge clk or negedge rst_n) begin
-    if (!rst_n)
-        data <= '0;
-    else
-        data <= new_data;
-end
+| Attribute / Command | Tool | Effect |
+|---|---|---|
+| `(* keep = "true" *)` | Vivado | Preserve net name through optimization |
+| `(* dont_touch = "true" *)` | Vivado | Prevent cell/net optimization |
+| `set_dont_touch [get_cells <name>]` | DC, Genus | Freeze cell from optimization |
+| `(* use_dsp = "yes" *)` | Vivado | Force multiply to DSP block |
+| `(* use_dsp = "no" *)` | Vivado | Prevent DSP inference |
+| `set_use_dsp true` | DC | DSP usage control |
+| `(* ram_style = "block" *)` | Vivado | Force BRAM inference |
+| `(* ram_style = "distributed" *)` | Vivado | Force LUT RAM inference |
+| `(* ram_style = "registers" *)` | Vivado | Force register array |
+| `(* keep_hierarchy = "yes" *)` | Vivado | Prevent boundary optimization |
+| `set_boundary_optimization false` | DC | Preserve module boundaries |
 
-// ❌ Avoid: Dual edge (not all targets support)
-always_ff @(posedge clk or negedge clk) // Don't do this
-```
+> Attributes in RTL are non-portable. Wrap in `` `ifdef SYNTHESIS `` where the attribute would break a non-Vivado flow.
 
-### Latch Avoidance
-
-```systemverilog
-// ❌ Infers latch
-always_comb begin
-    if (sel)
-        out = a;
-    // Missing else!
-end
-
-// ✅ Complete assignment
-always_comb begin
-    out = '0;  // Default
-    if (sel)
-        out = a;
-end
-```
+**How to verify:** Synthesis utilization report shows expected DSP/BRAM/LUT counts matching attribute intent.
 
 ---
 
-## Resource Sharing
+### Step 3 — Configure timing constraints
 
-### Multiplier Sharing
+Timing constraints (SDC) **must exist before synthesis** so the tool can optimize logic toward the timing goal. See `timing-constraints` skill for full SDC authoring.
 
-```systemverilog
-// Tool can share one multiplier
-always_ff @(posedge clk) begin
-    if (sel)
-        result <= a * b;
-    else
-        result <= c * d;
-end
-```
+Key points for synthesis-only constraint flow:
+- Define all clocks with `create_clock` before `synth_design` (Vivado) or `compile_ultra` (DC).
+- Set input/output delays relative to clock so the tool sizes the I/O paths.
+- Use `set_clock_groups -asynchronous` for independent clocks — do not leave cross-domain paths unconstrained.
 
-### Adder Tree
+**Vivado:** `read_xdc constraints.xdc` before `synth_design -top <top> -part <part>`
+**DC:** `source constraints.sdc` before `compile_ultra`
 
-```systemverilog
-// Let tool optimize the tree
-wire [31:0] sum = a + b + c + d + e + f + g + h;
-```
+**How to verify:** `check_timing` (Vivado) / `check_timing -verbose` (DC) — zero unconstrained endpoints.
 
 ---
 
-## Timing Optimization
+### Step 4 — Run synthesis and check QoR
 
-### Register Outputs
+After synthesis completes, check timing and area quality-of-results (QoR).
 
-```systemverilog
-// ❌ Long comb path to output
-assign data_out = complex_logic(data_in);
+- **Timing:**
+  ```tcl
+  # Vivado
+  report_timing_summary -file timing_summary.rpt
 
-// ✅ Registered output
-always_ff @(posedge clk) begin
-    data_out <= complex_logic(data_in);
-end
-```
+  # DC
+  report_timing -max_paths 10 -path_type full
+  ```
+  Target: WNS (worst negative slack) ≥ 0 on all path groups.
 
-### Pipeline Long Paths
+- **Area / utilization:**
+  ```tcl
+  # Vivado
+  report_utilization -file utilization.rpt
 
-```systemverilog
-// ❌ Single cycle, may fail timing
-assign result = (a * b) + (c * d) + (e * f);
+  # DC
+  report_area -hierarchy
+  ```
+  Check LUTs, BRAMs, DSPs against design budget.
 
-// ✅ Pipelined
-always_ff @(posedge clk) begin
-    // Stage 1: Multiply
-    prod1 <= a * b;
-    prod2 <= c * d;
-    prod3 <= e * f;
-end
-always_ff @(posedge clk) begin
-    // Stage 2: Add
-    result <= prod1 + prod2 + prod3;
-end
-```
+**How to verify:** Timing report shows no critical paths (WNS ≥ 0); utilization report within budget.
 
 ---
 
-## Area Optimization
+### Step 5 — Fix critical-path violations
 
-### Bit Width
+Apply fixes in this order (least invasive first):
 
+**a. Pipeline register** — insert a register between long-path stages. Adds 1-cycle latency, enables higher clock frequency.
 ```systemverilog
-// Use minimum width
-localparam COUNTER_WIDTH = $clog2(MAX_COUNT + 1);
-logic [COUNTER_WIDTH-1:0] counter;
+// Stage 1: multiply
+always_ff @(posedge clk) product <= a * b;
+// Stage 2: add
+always_ff @(posedge clk) result  <= product + c;
 ```
 
-### Mux vs Decoder
+**b. Operand pre-registration** — if a slow operand (e.g., configuration value) is stable cycle-to-cycle, register it one cycle early so the multiply/add has a full clock cycle.
 
-```systemverilog
-// Mux: Fewer gates for few inputs
-assign out = sel ? a : b;
-
-// Decoder: Better for many outputs
-always_comb begin
-    case (sel)
-        2'b00: out = a;
-        2'b01: out = b;
-        2'b10: out = c;
-        2'b11: out = d;
-    endcase
-end
-```
-
----
-
-## Common Issues
-
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Latch | Incomplete if/case | Default assignment |
-| Multi-driven | Multiple always | Single driver |
-| Combo loop | Feedback path | Add register |
-| Undriven | Missing connection | Connect or tie |
-
----
-
-## Synthesis Directives
-
-```systemverilog
-// Preserve hierarchy
-(* keep_hierarchy = "yes" *)
-module important_block (...);
-
-// Use specific resource
-(* use_dsp = "yes" *)
-logic signed [17:0] product = a * b;
-
-// RAM style
-(* ram_style = "block" *)
-logic [31:0] mem [1023:0];
-
-// Don't touch
-(* dont_touch = "true" *)
-logic critical_signal;
-```
-
----
-
-## Timing Waiver
-
-When timing cannot be met:
-1. First try design changes (pipeline)
-2. Document why exception is safe
-3. Add proper multicycle/false path
-
+**c. Retiming** — tool redistributes registers across combinational logic without changing I/O behavior:
 ```tcl
-# Document the reason
-# This path is only sampled once per frame
-set_multicycle_path 2 -setup -from [get_cells cfg_*]
+# Vivado
+set_property RETIMING_FORWARD 1 [get_cells u_mult*]
+
+# DC
+set_boundary_optimization true
+optimize_registers -forward
 ```
+
+**d. Adder tree restructuring** — write flat sums; avoid forcing left-to-right evaluation:
+```systemverilog
+// Allows tool to balance tree:
+assign sum = a + b + c + d;
+// NOT: assign sum = ((a + b) + c) + d;
+```
+
+**How to verify:** Re-run `report_timing_summary`; WNS ≥ 0 on all path groups.
+
+---
+
+### Step 6 — Gate-level simulation readiness
+
+Before handing the netlist to GLS:
+
+- **`initial` blocks:** synthesis ignores them. Any signal initialized only by an `initial` block (not by reset) will be X in GLS. Replace every `initial`-based initialization with a proper reset assignment in `always_ff`.
+- **X-propagation:** gate-level simulation propagates X through every gate pessimistically. RTL sim may mask X where synthesis does not. Full reset coverage — every register reachable by the reset sequence — is required.
+- **Reset polarity:** active-low `rst_n` in RTL maps to `FDCE` (negative-edge clear) in Xilinx libraries; active-high libraries (some ASIC cells) invert the reset net silently. Verify library cell reset pin polarity matches RTL coding.
+- **SDF annotation** (post-implementation only): back-annotate with `$sdf_annotate("design.sdf", top_tb.dut)` in the testbench for timing-accurate GLS.
+
+**How to verify:** Post-synthesis GLS runs clean with zero X-propagation failures at reset assertion and deassertion.
+
+---
+
+## Decision flowchart
+
+```dot
+digraph fix_timing {
+    "Timing violation found" -> "Is path between independent clock domains?";
+    "Is path between independent clock domains?" -> "set_clock_groups or set_max_delay\n(see timing-constraints skill)" [label="yes"];
+    "Is path between independent clock domains?" -> "Can design tolerate N+1 cycle latency?" [label="no"];
+    "Can design tolerate N+1 cycle latency?" -> "Add pipeline register" [label="yes"];
+    "Can design tolerate N+1 cycle latency?" -> "Is a slow operand used as input to a multi-op chain?" [label="no"];
+    "Is a slow operand used as input to a multi-op chain?" -> "Pre-register the slow operand" [label="yes"];
+    "Is a slow operand used as input to a multi-op chain?" -> "Try synthesis retiming directive" [label="no"];
+    "Try synthesis retiming directive" -> "WNS >= 0?" [label="run synthesis"];
+    "WNS >= 0?" -> "Done" [label="yes"];
+    "WNS >= 0?" -> "Escalate: floorplan, placement, or logic restructure required" [label="no"];
+}
+```
+
+## Validation gates
+
+- **Gate 1:** No latch inference warnings in synthesis log
+- **Gate 2:** No combinational loop warnings in synthesis log
+- **Gate 3:** `check_timing` (Vivado) / `check_timing -verbose` (DC) — zero unconstrained paths
+- **Gate 4:** WNS ≥ 0 on all path groups after synthesis
+- **Gate 5:** Resource utilization (BRAMs, DSPs, LUTs) within design budget
+- **Gate 6:** Gate-level simulation passes with no X-propagation failures on reset sequence
+
+## Common failure modes & recovery
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| Latch inferred on case output | Output not assigned in all branches | Add `decoded = '0;` default before `case`; use `unique case` |
+| Gate-level sim X after reset | `initial` block sets sim state; synthesis ignores it | Replace `initial` with explicit reset assignment in `always_ff` |
+| WNS −0.3 ns on multiplier-adder | Multiply + add exceeds 1 cycle in target tech | Pipeline: register between multiply and add stages |
+| DSP not inferred, uses LUTs | Tool does not recognize multiply pattern | Add `(* use_dsp = "yes" *)` attribute; use `$signed` operands |
+| Critical register optimized away | Tool removes register with no fanout in context | Add `(* dont_touch = "true" *)` (Vivado) or `set_dont_touch` (DC) |
+| Reset polarity mismatch in GLS | RTL uses active-low; library cell is active-high | Check library cell reset pin; fix mapping or add explicit inverter |
+
+## Citations
+
+- IEEE 1800-2017 §9.2.2 — `always_comb` implicit sensitivity and time-0 evaluation guarantee
+- IEEE 1800-2017 §9.4.2 — `always_ff` sequential block semantics
+- Vivado Design Suite User Guide UG901 — Synthesis Attributes
+- Synopsys DC User Guide — `compile_ultra`, `optimize_registers`, `set_dont_touch`
+
+## See also
+
+- `references/rtl-coding-for-synthesis.md` — latch inference, combinational loops, reset coding, interface synthesis, X-propagation
+- `references/synthesis-attributes.md` — full attribute reference table for Vivado and DC/Genus
+- `references/timing-optimization.md` — pipelining, operand pre-registration, retiming, adder trees, DSP cascading
+- `references/gate-level-sim.md` — GLS hazards, X-propagation modes, reset coverage, SDF annotation
+- `examples/pipelined_mult_add.sv` — before/after pipelining example with synthesis attributes
+- `timing-constraints` skill — SDC authoring, clock groups, multicycle paths
