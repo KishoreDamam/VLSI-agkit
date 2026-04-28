@@ -37,14 +37,14 @@ assign product = $signed(a) * $signed(b);
 
 | Attribute / Command | Tool | Value | Effect |
 |---|---|---|---|
-| `(* use_dsp = "yes" *)` | Vivado | `"yes"` | Forces multiply (or multiply-accumulate) to DSP48E2/DSP58 block |
-| `(* use_dsp = "no" *)` | Vivado | `"no"` | Prevents DSP inference; uses LUTs instead |
-| `set_use_dsp true` | DC | TCL | Enables DSP mapping for the current module or net |
-| `set_use_dsp false` | DC | TCL | Disables DSP mapping |
+| `(* use_dsp = "yes" *)` | Vivado | `"yes"` | Prefer DSP48E2/DSP58 inference (hint, not guarantee; verify with `report_utilization`) |
+| `(* use_dsp = "no" *)` | Vivado | `"no"` | Prevent DSP inference; use LUTs instead |
+| `set_dp_smartgen_options -DP_MAP_DSP_MODE prefer` | DC NXT | TCL | Prefer DSP mapping; version-specific — check DC release notes |
 
 **Notes:**
 - Vivado requires the attribute on the **output** register or wire of the multiply, not on the operands.
-- For DC, `set_use_dsp` is a compile directive; apply it before `compile_ultra`.
+- `use_dsp = "yes"` is a hint; multipliers below ~18×18 bits may still map to LUTs.
+- DC DSP control varies by version (`set_dp_smartgen_options`, `set_resource_allocation`); check the specific DC release notes.
 - Using `$signed(a) * $signed(b)` helps the tool recognize signed multiplies for DSP inference even without the attribute.
 
 ```systemverilog
@@ -141,8 +141,8 @@ set_dont_touch [get_cells u_mult/u_pipe_reg]
 # Disable boundary optimization on a module
 set_boundary_optimization false [get_designs critical_path_block]
 
-# Enable DSP for a module
-set_use_dsp true
+# Prefer DSP mapping (DC NXT; version-specific)
+set_dp_smartgen_options -DP_MAP_DSP_MODE prefer
 ```
 
 ---

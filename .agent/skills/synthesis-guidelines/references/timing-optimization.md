@@ -94,17 +94,12 @@ Retiming moves existing registers across combinational logic without changing th
 ### Vivado retiming
 
 ```tcl
-# Forward retiming on multiplier cells — tool may push registers forward
-# through combinational logic to balance the path
-set_property RETIMING_FORWARD 1 [get_cells u_mult*]
-
-# Can also apply globally (use with caution — may affect debug visibility)
-set_property RETIMING_FORWARD 1 [get_cells -hierarchical -filter {PRIMITIVE_TYPE =~ REGISTER.*}]
-```
-
-Enable retiming during `synth_design`:
-```tcl
+# Enable retiming globally via synth_design (recommended, Vivado 2019.1+)
 synth_design -top top -part xcu250-figd2104-2L-e -retiming
+
+# Or per-cell using the RETIMING property (Vivado 2019.1+)
+set_property RETIMING true [get_cells u_mult*]
+# Note: RETIMING_FORWARD is not a valid Vivado property; use RETIMING or -retiming.
 ```
 
 ### DC retiming

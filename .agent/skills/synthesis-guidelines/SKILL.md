@@ -34,7 +34,7 @@ Use `always_ff` for all sequential logic; use `always_comb` with default assignm
       else        q <= d;
   end
   ```
-- Never use `initial` blocks in synthesized RTL — they are simulation-only and are silently ignored by synthesis; missing reset coverage causes X-propagation in GLS.
+- Avoid relying on `initial` blocks for reset-equivalent behavior: ASIC synthesis (DC/Genus) silently ignores them; Vivado and Quartus synthesize `initial` blocks only for FF/BRAM power-on values (`INIT` attribute), which is not the same as a runtime reset. Use explicit `always_ff` reset paths for all runtime initialization.
 - Avoid combinational loops: any path where a combinational output feeds back to its own input without a register. Break every loop with a register.
 - Prevent latches with default assignment:
   ```systemverilog
@@ -61,9 +61,9 @@ Place attributes immediately before the declaration or module header they govern
 | `(* keep = "true" *)` | Vivado | Preserve net name through optimization |
 | `(* dont_touch = "true" *)` | Vivado | Prevent cell/net optimization |
 | `set_dont_touch [get_cells <name>]` | DC, Genus | Freeze cell from optimization |
-| `(* use_dsp = "yes" *)` | Vivado | Force multiply to DSP block |
-| `(* use_dsp = "no" *)` | Vivado | Prevent DSP inference |
-| `set_use_dsp true` | DC | DSP usage control |
+| `(* use_dsp = "yes" *)` | Vivado | Prefer DSP block inference (not guaranteed for small widths) |
+| `(* use_dsp = "no" *)` | Vivado | Prevent DSP inference; use LUTs |
+| `set_dp_smartgen_options -DP_MAP_DSP_MODE prefer` | DC NXT | Prefer DSP mapping (version-specific; check DC manual) |
 | `(* ram_style = "block" *)` | Vivado | Force BRAM inference |
 | `(* ram_style = "distributed" *)` | Vivado | Force LUT RAM inference |
 | `(* ram_style = "registers" *)` | Vivado | Force register array |
@@ -136,8 +136,11 @@ always_ff @(posedge clk) result  <= product + c;
 
 **c. Retiming** — tool redistributes registers across combinational logic without changing I/O behavior:
 ```tcl
-# Vivado
-set_property RETIMING_FORWARD 1 [get_cells u_mult*]
+# Vivado — global retiming at synthesis time (enable before synth_design)
+set_property -name {STEPS.SYNTH_DESIGN.ARGS.MORE OPTIONS} \
+    -value {-retiming} -objects [get_runs synth_1]
+# Or per-cell (Vivado 2019.1+):
+set_property RETIMING true [get_cells u_mult*]
 
 # DC
 set_boundary_optimization true
@@ -160,7 +163,7 @@ assign sum = a + b + c + d;
 Before handing the netlist to GLS:
 
 - **`initial` blocks:** synthesis ignores them. Any signal initialized only by an `initial` block (not by reset) will be X in GLS. Replace every `initial`-based initialization with a proper reset assignment in `always_ff`.
-- **X-propagation:** gate-level simulation propagates X through every gate pessimistically. RTL sim may mask X where synthesis does not. Full reset coverage — every register reachable by the reset sequence — is required.
+- **X-propagation:** default 4-state GLS applies standard X-masking rules (e.g., `0 & X = 0`), which can hide reset-coverage bugs that synthesis would not mask. Enable tool-specific pessimistic X-prop mode (`xprop` in Xcelium, `+xprop` in VCS) for thorough coverage. Either way, full reset coverage — every register reachable by the reset sequence — is required.
 - **Reset polarity:** active-low `rst_n` in RTL maps to `FDCE` (negative-edge clear) in Xilinx libraries; active-high libraries (some ASIC cells) invert the reset net silently. Verify library cell reset pin polarity matches RTL coding.
 - **SDF annotation** (post-implementation only): back-annotate with `$sdf_annotate("design.sdf", top_tb.dut)` in the testbench for timing-accurate GLS.
 

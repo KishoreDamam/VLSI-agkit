@@ -10,8 +10,8 @@ Gate-level simulation (GLS) runs the synthesized netlist — a structural descri
 
 | Aspect | RTL simulation | Gate-level simulation |
 |---|---|---|
-| `initial` blocks | Executed at time 0 | **Not present** — synthesis removes them |
-| X-propagation | Operator-masking (e.g., `X & 0 = 0`) | Pessimistic through every gate |
+| `initial` blocks | Executed at time 0 | ASIC (DC/Genus): removed. FPGA (Vivado/Quartus): mapped to INIT value only — no run-time reset equivalent |
+| X-propagation | Operator-masking (e.g., `X & 0 = 0`) | Same masking rules by default; enable `xprop` mode for pessimistic propagation |
 | Timing | No delay (functional only) | Optional: SDF annotation adds real gate delays |
 | Reset coverage | X in unreset FFs may be masked | Every unreset FF holds X; propagates forward |
 | Library cells | Behavioral models | Library-specific gate models |
@@ -23,7 +23,7 @@ Gate-level simulation (GLS) runs the synthesized netlist — a structural descri
 
 ### What synthesis does with `initial` blocks
 
-Synthesis tools (Vivado, DC, Genus) **silently discard all `initial` statements**. They have no hardware equivalent in FPGA fabric (flip-flops power up to an undefined state unless configured otherwise) or in standard-cell ASIC libraries.
+ASIC synthesis tools (DC, Genus) **silently discard all `initial` statements**. FPGA tools (Vivado, Quartus) synthesize `initial` blocks only as power-on `INIT` values for FFs and BRAMs — this is a one-time power-on state, not a runtime reset. Do not use `initial` blocks as a substitute for an `always_ff` reset path.
 
 | Construct | Survives synthesis? | GLS behavior |
 |---|---|---|
