@@ -243,6 +243,27 @@ make verify
 
 See [ARCHITECTURE.md](.agent/ARCHITECTURE.md) for the full architecture, agent responsibilities, and skill-loading protocol.
 
+## Release process (maintainers)
+
+Publishing to npm is automated via GitHub Actions. To cut a release:
+
+```bash
+# 1. Bump the version in package.json (semver)
+npm version patch    # or: minor / major
+
+# 2. Push the commit and the tag
+git push && git push --tags
+```
+
+The `Publish to npm` workflow (`.github/workflows/npm-publish.yml`) fires on
+any tag matching `v*`, verifies the tag matches `package.json`, runs
+`npm publish --access public --provenance`, and creates a GitHub Release with
+auto-generated notes.
+
+**One-time setup** (already done if you can see published versions):
+- Create an npm automation token at https://www.npmjs.com/settings/<user>/tokens
+- Add it as repository secret `NPM_TOKEN` in GitHub Settings → Secrets and variables → Actions
+
 ## Acknowledgements
 
 This kit is based on the [Antigravity Kit](https://github.com/vudovn/antigravity-kit) by [@vudovn](https://github.com/vudovn).
