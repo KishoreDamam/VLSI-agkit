@@ -1,6 +1,13 @@
 // valid_ready_if.sv — Parameterized valid/ready handshake interface
 // with producer and consumer modports.
 //
+// *** CI NOTE ***
+// This file is intentionally EXCLUDED from iverilog CI compilation.
+// iverilog 12 does not support `interface_type.modport_name port_name`
+// syntax in module port lists. Compile with VCS, Questa, or Xsim for
+// full interface+modport validation. The pipeline.sv example is the
+// iverilog-compatible runnable example.
+//
 // Interface signals:
 //   clk, rst_n  — clock and active-low reset (passed in from instantiator)
 //   valid        — asserted by producer when data is valid

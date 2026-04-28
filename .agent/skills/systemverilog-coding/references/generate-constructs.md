@@ -135,8 +135,12 @@ localparam int TOTAL_W   = STAGES * WIDTH;
 Generated instances are accessible via their label and index:
 
 ```systemverilog
-// Reference stage 2's flip-flop in simulation or formal:
-gen_pipe[2].stage[3]
+// stage[] is declared at module scope — access it directly:
+pipeline_inst.stage[2]    // output of stage 2 register
+
+// gen_pipe[i] is the scope label for the always_ff instance:
+// use it to reference named signals INSIDE the generate block, if any.
+// pipeline_inst.gen_pipe[2].some_local_signal
 ```
 
 This is useful in:

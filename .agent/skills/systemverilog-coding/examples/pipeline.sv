@@ -36,13 +36,16 @@ module pipeline #(
     genvar i;
     generate
         for (i = 0; i < STAGES; i++) begin : gen_pipe
+            // `i` is an elaboration-time constant (genvar). The `else if (i == 0)`
+            // branch is statically taken for i=0; the `else` branch (which would
+            // reference stage[-1]) is dead code for i=0 and is never elaborated.
+            // For i>0, `else if (i == 0)` is dead code, and stage[i-1] is valid.
+            // This pattern is required because iverilog rejects
+            // `assign stage[0] = data_in` on a logic array (use always_ff instead).
             always_ff @(posedge clk or negedge rst_n) begin
-                if (!rst_n)
-                    stage[i] <= '0;
-                else if (i == 0)
-                    stage[i] <= data_in;
-                else
-                    stage[i] <= stage[i-1];
+                if (!rst_n)      stage[i] <= '0;
+                else if (i == 0) stage[i] <= data_in;
+                else             stage[i] <= stage[i-1];
             end
         end
     endgenerate

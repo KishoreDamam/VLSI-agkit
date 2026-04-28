@@ -1,5 +1,5 @@
 ---
-name: "systemverilog-patterns"
+name: "systemverilog-coding"
 description: "SystemVerilog coding patterns: logic/reg/wire rules, interfaces, always blocks, generate, struct drivers, and anti-patterns."
 type: coding
 ---
@@ -97,7 +97,7 @@ my_consumer u_cons (.bus(u_bus.consumer));
 // WRONG: two blocks each driving one field of the same struct
 // -> "multiple drivers" error
 typedef struct packed { logic [15:0] addr; logic [15:0] data; } pkt_t;
-logic pkt_t pkt;                            // illegal: same signal, two drivers
+pkt_t pkt;                                  // two drivers below — this is the bug
 always_ff @(posedge clk) pkt.addr <= a;    // driver 1
 always_ff @(posedge clk) pkt.data <= d;    // driver 2 — ERROR
 
@@ -188,7 +188,7 @@ endmodule
 ```
 
 - **Gotchas:**
-  - Avoid `assign stage[0] = data_in` when `stage` is a `logic` array — some tools reject continuous assignment to array elements. Use the `i == 0` branch in `always_ff` instead.
+  - `assign stage[0] = data_in` is rejected by iverilog when `stage` is a `logic` array. Use the `else if (i == 0)` branch inside `always_ff` instead. The `stage[-1]` reference in the dead `else` branch is never elaborated for `i=0` because `i` is a genvar (elaboration constant). Vendor tools (VCS, Questa) also accept `assign stage[0]` directly.
   - Label generate blocks (`gen_pipe`) for hierarchical references and waveform viewers.
   - Parameter validation with `$fatal` runs at elaboration and gives a clear error.
 
