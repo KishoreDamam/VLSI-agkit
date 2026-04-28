@@ -24,7 +24,7 @@ Copy the `.agent` folder to your VLSI project root.
 | Component     | Count | Description                                                        |
 | ------------- | ----- | ------------------------------------------------------------------ |
 | **Agents**    | 14    | Specialist AI personas (RTL, Verification, Synthesis, Timing, etc.) |
-| **Skills**    | 22    | Domain-specific knowledge modules                                  |
+| **Skills**    | 18    | Domain-specific knowledge modules                                  |
 | **Workflows** | 10    | Slash command procedures                                           |
 
 ## Usage
