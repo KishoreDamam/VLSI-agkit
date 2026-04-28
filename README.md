@@ -21,6 +21,51 @@ vlsi-agkit init
 
 Copy the `.agent` folder to your VLSI project root.
 
+## Supported AI Tools
+
+The `.agent/` folder is **tool-agnostic** — the agents, skills, and workflows are plain Markdown that any AI coding assistant can read. Each tool plugs in differently:
+
+| Tool | How it discovers the kit | Slash commands |
+|---|---|---|
+| **Claude Code** | Reads `.claude/commands/*.md` for slash commands; agents reference `.agent/` paths | ✅ Built-in (`/design`, `/verify`, etc.) |
+| **Gemini CLI** | Reads `GEMINI.md` at project root (auto-copied by `init`); follows the rules to load agents/skills from `.agent/` | ✅ Via `GEMINI.md` routing |
+| **Cursor** | Add `.cursorrules` or `.cursor/rules/vlsi.mdc` pointing at `.agent/` (see snippet below) | ⚠️ Manual — invoke via `@.agent/workflows/<name>.md` |
+| **GitHub Copilot Chat** | Add `.github/copilot-instructions.md` pointing at `.agent/` (see snippet below) | ⚠️ Manual — reference via `#file:.agent/workflows/<name>.md` |
+
+### Cursor setup
+
+Create `.cursorrules` at your project root:
+
+```
+This project uses the VLSI Agent Kit at `.agent/`.
+
+Before any RTL/verification/synthesis task:
+1. Read `.agent/rules/GEMINI.md` for routing rules.
+2. Pick the matching agent from `.agent/agents/<name>.md` based on the task.
+3. Load the listed skills' `SKILL.md` from `.agent/skills/<name>/`.
+4. Use `.agent/workflows/<name>.md` for multi-step procedures.
+```
+
+### GitHub Copilot Chat setup
+
+Create `.github/copilot-instructions.md`:
+
+```markdown
+# Project context
+
+This project uses the VLSI Agent Kit at `.agent/` for FPGA & ASIC RTL development.
+
+When asked about RTL design, verification, synthesis, timing, or CDC:
+1. Reference the matching agent in `.agent/agents/<name>.md`.
+2. Load the relevant skill index card from `.agent/skills/<skill>/SKILL.md`.
+3. Pull deeper guidance from `.agent/skills/<skill>/references/` as needed.
+4. Use worked examples in `.agent/skills/<skill>/examples/` for patterns.
+```
+
+### Claude Code (zero-config)
+
+Already wired — `init` installs `.claude/commands/` and the agents/skills under `.agent/` are discoverable via `@<agent-name>` mentions and slash commands.
+
 ## What's Included
 
 | Component     | Count | Description                                                        |
