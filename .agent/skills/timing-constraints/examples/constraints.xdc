@@ -94,17 +94,20 @@ set_false_path -from [get_ports rst_n]
 # div_result_reg fires only on even cycles.
 #
 # set_multicycle_path 2 -setup: allows 2 × 5 ns = 10 ns for the path.
-# set_multicycle_path 1 -hold:  compensates the hold check; without this,
-#   the hold window shifts to cycle +1, potentially missing a real violation
-#   from data launched at cycle +1 overwriting the intended cycle +0 launch.
+# set_multicycle_path 1 -hold:  mandatory hold compensation (N-1 = 1).
+#   Without this, the tool relaxes the hold check to one cycle before the new
+#   setup capture edge (cycle +1), making it too lenient and potentially
+#   masking real hold violations where fast data from a later launch arrives
+#   too early. The N-1 compensation restores the hold check to the default
+#   position (same edge as the original single-cycle analysis).
 
 set_multicycle_path 2 -setup \
-    -from [get_cells u_divider/div_stage_reg*/Q] \
-    -to   [get_cells u_divider/div_result_reg*/D]
+    -from [get_cells u_divider/div_stage_reg*] \
+    -to   [get_cells u_divider/div_result_reg*]
 
 set_multicycle_path 1 -hold \
-    -from [get_cells u_divider/div_stage_reg*/Q] \
-    -to   [get_cells u_divider/div_result_reg*/D]
+    -from [get_cells u_divider/div_stage_reg*] \
+    -to   [get_cells u_divider/div_result_reg*]
 
 # ─────────────────────────────────────────────────────────────────────────────
 # SECTION 7: CDC max-delay — gray-coded pointer for async FIFO
@@ -119,5 +122,5 @@ set_multicycle_path 1 -hold \
 # Value = destination clock period = 5.0 ns.
 
 set_max_delay 5.0 -datapath_only \
-    -from [get_cells u_async_fifo/wr_ptr_gray_reg*/Q] \
-    -to   [get_cells u_async_fifo/rd_sync_reg*[0]/D]
+    -from [get_pins u_async_fifo/wr_ptr_gray_reg*/Q] \
+    -to   [get_pins u_async_fifo/rd_sync_reg*[0]/D]

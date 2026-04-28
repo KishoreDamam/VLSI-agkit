@@ -101,7 +101,7 @@ type: flow
 
    ```tcl
    # Static config register written once at boot — remove from STA
-   set_false_path -from [get_cells cfg_reg*/Q]
+   set_false_path -from [get_cells cfg_reg*]
 
    # Slow ALU result, captured every 3 cycles (N=3 multicycle)
    set_multicycle_path 3 -setup -from [get_cells alu_*] -to [get_cells result_*]
@@ -120,8 +120,8 @@ type: flow
    # Gray pointer from 100 MHz write to 250 MHz read domain
    # Value = destination clock period (4 ns for 250 MHz)
    set_max_delay 4.0 -datapath_only \
-       -from [get_cells wr_ptr_gray*/Q] \
-       -to   [get_cells rd_sync_reg*/D]
+       -from [get_pins wr_ptr_gray*/Q] \
+       -to   [get_pins rd_sync_reg*/D]
    ```
 
    - How to verify: `report_timing` on these paths shows arrival ≤ 4.0 ns; no
@@ -134,6 +134,9 @@ type: flow
    ```tcl
    set_property PACKAGE_PIN W5    [get_ports clk_200_p]
    set_property IOSTANDARD  LVDS  [get_ports clk_200_p]
+   # BACKBONE: directs clock to global backbone routing when not on a CCIO pin.
+   # Use FALSE to suppress the DRC warning only (last resort, higher jitter).
+   # Preferred: always place clocks on CCIO-capable pins to avoid this entirely.
    set_property CLOCK_DEDICATED_ROUTE BACKBONE [get_nets clk_200_buf]
    ```
 
