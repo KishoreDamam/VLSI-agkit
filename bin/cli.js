@@ -67,11 +67,24 @@ function init(targetDir = '.') {
     fs.copyFileSync(geminiSrc, geminiDest);
   }
 
+  // Copy GitHub Copilot instructions to .github/ if it doesn't exist
+  const copilotSrc = path.join(agentSrc, 'rules', 'copilot-instructions.md');
+  const githubDir = path.join(targetDir, '.github');
+  const copilotDest = path.join(githubDir, 'copilot-instructions.md');
+
+  if (fs.existsSync(copilotSrc) && !fs.existsSync(copilotDest)) {
+    log('📄 Creating .github/copilot-instructions.md...', COLORS.cyan);
+    fs.mkdirSync(githubDir, { recursive: true });
+    fs.copyFileSync(copilotSrc, copilotDest);
+  }
+
   log('\n✅ VLSI Kit initialized successfully!\n', COLORS.green + COLORS.bold);
   log('📦 Installed:', COLORS.cyan);
   log('   • 14 Specialist Agents');
   log('   • 18 VLSI Skills');
-  log('   • 10 Workflows\n');
+  log('   • 10 Workflows');
+  log('   • GEMINI.md (Gemini CLI)');
+  log('   • .github/copilot-instructions.md (GitHub Copilot Chat)\n');
   log('📖 Usage:', COLORS.cyan);
   log('   • Use @agent-name to invoke agents');
   log('   • Use /workflow to run workflows');

@@ -31,7 +31,7 @@ The `.agent/` folder is **tool-agnostic** — the agents, skills, and workflows 
 | **Google Antigravity** | Reads `AGENTS.md` at project root pointing at `.agent/`; agent personas and skills load on demand | ✅ Via workflow files in `.agent/workflows/` |
 | **Gemini CLI** | Reads `GEMINI.md` at project root (auto-copied by `init`); follows the rules to load agents/skills from `.agent/` | ✅ Via `GEMINI.md` routing |
 | **Cursor** | Add `.cursorrules` or `.cursor/rules/vlsi.mdc` pointing at `.agent/` (see snippet below) | ⚠️ Manual — invoke via `@.agent/workflows/<name>.md` |
-| **GitHub Copilot Chat** | Add `.github/copilot-instructions.md` pointing at `.agent/` (see snippet below) | ⚠️ Manual — reference via `#file:.agent/workflows/<name>.md` |
+| **GitHub Copilot Chat** | Reads `.github/copilot-instructions.md` (auto-copied by `init`); follows the rules to load agents/skills from `.agent/` | ✅ Via Copilot Chat with workflow file references |
 
 ### Google Antigravity setup
 
@@ -75,21 +75,10 @@ Before any RTL/verification/synthesis task:
 4. Use `.agent/workflows/<name>.md` for multi-step procedures.
 ```
 
-### GitHub Copilot Chat setup
+### GitHub Copilot Chat (zero-config)
 
-Create `.github/copilot-instructions.md`:
-
-```markdown
-# Project context
-
-This project uses the VLSI Agent Kit at `.agent/` for FPGA & ASIC RTL development.
-
-When asked about RTL design, verification, synthesis, timing, or CDC:
-1. Reference the matching agent in `.agent/agents/<name>.md`.
-2. Load the relevant skill index card from `.agent/skills/<skill>/SKILL.md`.
-3. Pull deeper guidance from `.agent/skills/<skill>/references/` as needed.
-4. Use worked examples in `.agent/skills/<skill>/examples/` for patterns.
-```
+Already wired — `init` writes `.github/copilot-instructions.md`. Copilot Chat will
+automatically apply the routing rules and load agents/skills from `.agent/`.
 
 ### Claude Code (zero-config)
 
