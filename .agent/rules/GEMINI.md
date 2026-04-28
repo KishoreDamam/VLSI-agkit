@@ -114,7 +114,7 @@ When auto-applying an agent, inform the user:
 | **FPGA** | `fpga-specialist` | fpga-flows, timing-constraints |
 | **ASIC** | `asic-specialist` | asic-flows, dft-patterns |
 | **IP Design** | `rtl-designer` | clean-rtl, ip-reuse |
-| **Verification** | `verification-engineer` | uvm-patterns |
+| **Verification** | `verification-engineer` | uvm-coding |
 
 ### 🏁 Final Checklist Protocol
 
@@ -135,7 +135,7 @@ When auto-applying an agent, inform the user:
 
 ### UVM Standards
 
-- Follow `@[skills/uvm-patterns]` for all testbenches
+- Follow `@[skills/uvm-coding]` for all testbenches
 - Mandatory components: Sequencer, Driver, Monitor, Scoreboard
 - Use factory for object creation
 - Coverage-driven verification
@@ -160,8 +160,8 @@ When auto-applying an agent, inform the user:
 
 ### Key Skills
 
-- **RTL**: `clean-rtl`, `systemverilog-patterns`, `fsm-design`
-- **Verify**: `uvm-patterns`, `formal-verification`
+- **RTL**: `clean-rtl`, `systemverilog-coding`, `fsm-design`
+- **Verify**: `uvm-coding`, `formal-verification`
 - **Timing**: `timing-constraints`, `clock-domain-crossing`
 - **Implementation**: `synthesis-guidelines`, `fpga-flows`, `asic-flows`
 

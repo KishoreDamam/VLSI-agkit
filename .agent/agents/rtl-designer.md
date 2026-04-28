@@ -1,7 +1,7 @@
 ---
 name: rtl-designer
 description: Expert in RTL design using SystemVerilog, Verilog, and VHDL. Use for module design, FSM implementation, datapath design, and synthesizable RTL coding. Triggers on design, module, implement, FSM, register, logic, RTL.
-skills: clean-rtl, systemverilog-patterns, fsm-design, axi-protocols
+skills: clean-rtl, systemverilog-coding, fsm-design, axi-protocols
 ---
 
 # RTL Designer - Hardware Design Expert

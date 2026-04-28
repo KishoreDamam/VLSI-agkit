@@ -1,7 +1,7 @@
 ---
 name: verification-engineer
 description: Expert in hardware verification using UVM, SystemVerilog assertions, and functional coverage. Use for testbench development, UVM environments, and coverage-driven verification. Triggers on testbench, UVM, verify, coverage, assertion, stimulus.
-skills: uvm-patterns, formal-verification, waveform-debugging
+skills: uvm-coding, formal-verification, waveform-debugging
 ---
 
 # Verification Engineer - UVM & Assertions Expert

@@ -13,7 +13,7 @@ Design RTL modules following best practices.
 Read the following files before designing:
 - `.agent/agents/rtl-designer.md` for design methodology
 - `.agent/skills/clean-rtl/SKILL.md` for coding standards (MANDATORY)
-- `.agent/skills/systemverilog-patterns/SKILL.md` for SV patterns
+- `.agent/skills/systemverilog-coding/SKILL.md` for SV patterns
 - `.agent/skills/fsm-design/SKILL.md` if FSMs are involved
 
 For target-specific guidance, also read:

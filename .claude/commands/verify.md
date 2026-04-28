@@ -12,7 +12,7 @@ Verify RTL designs with testbenches, assertions, and coverage.
 
 Read the following files before creating verification:
 - `.agent/agents/verification-engineer.md` for verification methodology
-- `.agent/skills/uvm-patterns/SKILL.md` for UVM testbenches
+- `.agent/skills/uvm-coding/SKILL.md` for UVM testbenches
 - `.agent/skills/formal-verification/SKILL.md` for assertions
 - `.agent/skills/waveform-debugging/SKILL.md` for debug techniques
 
