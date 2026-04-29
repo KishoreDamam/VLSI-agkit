@@ -21,6 +21,51 @@ vlsi-agkit init
 
 Copy the `.agent` folder to your VLSI project root.
 
+## Use the kit without an AI tool (CLI mode)
+
+The `vlsi-agkit` CLI lets you browse, search, and run the kit directly from
+your terminal — no AI assistant required. Run any command with `npx` (no
+install needed) or after `init`/global install.
+
+```bash
+# Browse
+npx @kishore-damam/vlsi-agkit list                       # everything
+npx @kishore-damam/vlsi-agkit list skills                # only skills
+npx @kishore-damam/vlsi-agkit skill clock-domain-crossing
+npx @kishore-damam/vlsi-agkit skill timing-constraints --list
+npx @kishore-damam/vlsi-agkit skill timing-constraints multicycle-paths
+
+# Search across the whole kit (case-insensitive regex)
+npx @kishore-damam/vlsi-agkit search "async FIFO"
+npx @kishore-damam/vlsi-agkit search "set_multicycle_path"
+
+# Read agent or workflow definitions
+npx @kishore-damam/vlsi-agkit agent rtl-designer
+npx @kishore-damam/vlsi-agkit workflow design
+
+# Run example verification (requires iverilog or vendor sim — see below)
+npx @kishore-damam/vlsi-agkit verify              # all skills
+npx @kishore-damam/vlsi-agkit verify fsm-design   # one skill
+```
+
+### Pipe-friendly output
+
+All `skill`, `agent`, and `workflow` commands print raw markdown to stdout, so
+you can pipe to a pager or markdown renderer:
+
+```bash
+vlsi-agkit skill uvm-coding | less
+vlsi-agkit skill fsm-design | glow -          # https://github.com/charmbracelet/glow
+vlsi-agkit skill cdc > cdc-cheatsheet.md      # save to file
+```
+
+### Source resolution
+
+If you've run `vlsi-agkit init` in your project, the CLI uses the local
+`.agent/` folder. Otherwise it falls back to the `.agent/` bundled inside the
+npm package — so `npx vlsi-agkit list` works from any directory, even on a
+clean machine.
+
 ## Supported AI Tools
 
 The `.agent/` folder is **tool-agnostic** — the agents, skills, and workflows are plain Markdown that any AI coding assistant can read. Each tool plugs in differently:
