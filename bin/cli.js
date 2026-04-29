@@ -2,10 +2,31 @@
 
 const fs = require('fs');
 const path = require('path');
+const readline = require('readline');
 const { spawnSync } = require('child_process');
 
 const args = process.argv.slice(2);
 const command = args[0];
+
+// ---------------------------------------------------------------------------
+// Interactive prompt helpers (zero-dependency)
+// ---------------------------------------------------------------------------
+function ask(question, defaultValue = '') {
+  return new Promise((resolve) => {
+    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
+    rl.question(question, (answer) => {
+      rl.close();
+      resolve(answer.trim() || defaultValue);
+    });
+  });
+}
+
+async function askYesNo(question, defaultYes = true) {
+  const hint = defaultYes ? '[Y/n]' : '[y/N]';
+  const ans = (await ask(`${question} ${hint} `, defaultYes ? 'y' : 'n')).toLowerCase();
+  if (!ans) return defaultYes;
+  return ans === 'y' || ans === 'yes';
+}
 
 const COLORS = {
   reset: '\x1b[0m',
@@ -79,57 +100,186 @@ function readFrontmatter(filePath) {
 }
 
 // ---------------------------------------------------------------------------
-// init — install kit in current project
+// init — install kit in current project (interactive)
 // ---------------------------------------------------------------------------
-function init(targetDir = '.') {
+
+// Tool config: which template file goes to which destination
+const TOOL_CONFIGS = {
+  claude: {
+    label: 'Claude Code',
+    description: 'reads .agent/ + .claude/commands/ (already inside .agent)',
+    targets: [], // Claude is zero-config — handled by .agent copy itself
+  },
+  copilot: {
+    label: 'GitHub Copilot Chat',
+    description: 'writes .github/copilot-instructions.md',
+    targets: [{ src: 'rules/copilot-instructions.md', dest: '.github/copilot-instructions.md' }],
+  },
+  gemini: {
+    label: 'Gemini CLI',
+    description: 'writes GEMINI.md',
+    targets: [{ src: 'rules/GEMINI.md', dest: 'GEMINI.md' }],
+  },
+  cursor: {
+    label: 'Cursor',
+    description: 'writes .cursorrules',
+    targets: [{ src: 'rules/cursorrules.md', dest: '.cursorrules' }],
+  },
+  antigravity: {
+    label: 'Google Antigravity',
+    description: 'writes AGENTS.md',
+    targets: [{ src: 'rules/AGENTS.md', dest: 'AGENTS.md' }],
+  },
+};
+
+const ALL_SKILLS = [
+  'asic-flows', 'axi-protocols', 'brainstorming', 'clean-rtl',
+  'clock-domain-crossing', 'dft-patterns', 'formal-verification', 'fpga-flows',
+  'fsm-design', 'ip-reuse', 'low-power-design', 'plan-writing',
+  'synthesis-guidelines', 'systemverilog-coding', 'tcl-scripting',
+  'timing-constraints', 'uvm-coding', 'waveform-debugging',
+];
+
+function parseFlagValue(flag) {
+  // Support --flag=value and --flag value
+  const idx = args.findIndex((a) => a === flag || a.startsWith(`${flag}=`));
+  if (idx === -1) return null;
+  if (args[idx].includes('=')) return args[idx].split('=').slice(1).join('=');
+  return args[idx + 1] || null;
+}
+
+async function init(targetDir = '.') {
   const packageDir = path.dirname(__dirname);
   const agentSrc = path.join(packageDir, '.agent');
   const agentDest = path.join(targetDir, '.agent');
+
+  const force = args.includes('--force');
+  const yes = args.includes('-y') || args.includes('--yes');
+  const toolsFlag = parseFlagValue('--tools');     // e.g. --tools=claude,copilot
+  const skillsFlag = parseFlagValue('--skills');   // e.g. --skills=fsm-design,uvm-coding or 'all'
 
   log('\n🚀 VLSI Kit - AI Agent Kit for VLSI Development\n', COLORS.cyan + COLORS.bold);
 
   if (fs.existsSync(agentDest)) {
     log('⚠️  .agent directory already exists!', COLORS.yellow);
-    log('   Use --force to overwrite.\n', COLORS.yellow);
-
-    if (!args.includes('--force')) {
+    if (!force) {
+      log('   Use --force to overwrite.\n', COLORS.yellow);
       process.exit(1);
     }
     log('   Overwriting existing .agent directory...\n', COLORS.yellow);
     fs.rmSync(agentDest, { recursive: true, force: true });
   }
 
-  log('📁 Copying VLSI agent files...', COLORS.cyan);
-  copyDir(agentSrc, agentDest);
-
-  const geminiSrc = path.join(agentSrc, 'rules', 'GEMINI.md');
-  const geminiDest = path.join(targetDir, 'GEMINI.md');
-  if (!fs.existsSync(geminiDest)) {
-    log('📄 Creating GEMINI.md in project root...', COLORS.cyan);
-    fs.copyFileSync(geminiSrc, geminiDest);
+  // ---------- Step 1: tool selection ----------
+  let selectedTools;
+  if (toolsFlag) {
+    selectedTools = toolsFlag === 'all'
+      ? Object.keys(TOOL_CONFIGS)
+      : toolsFlag.split(',').map((t) => t.trim()).filter((t) => TOOL_CONFIGS[t]);
+  } else if (yes) {
+    selectedTools = ['claude', 'copilot', 'gemini'];   // sensible default
+  } else {
+    log(`${COLORS.bold}Step 1: Which AI tools will you use?${COLORS.reset}`);
+    log('Pick any combination — the kit configures each one for you.\n', COLORS.gray);
+    selectedTools = [];
+    const defaults = { claude: true, copilot: true, gemini: true, cursor: false, antigravity: false };
+    for (const [key, cfg] of Object.entries(TOOL_CONFIGS)) {
+      const ok = await askYesNo(
+        `  ${cfg.label.padEnd(22)} ${COLORS.gray}(${cfg.description})${COLORS.reset}`,
+        defaults[key]
+      );
+      if (ok) selectedTools.push(key);
+    }
+    if (selectedTools.length === 0) {
+      log('\n⚠️  No tools selected — installing .agent/ only.\n', COLORS.yellow);
+    }
   }
 
-  const copilotSrc = path.join(agentSrc, 'rules', 'copilot-instructions.md');
-  const githubDir = path.join(targetDir, '.github');
-  const copilotDest = path.join(githubDir, 'copilot-instructions.md');
-  if (fs.existsSync(copilotSrc) && !fs.existsSync(copilotDest)) {
-    log('📄 Creating .github/copilot-instructions.md...', COLORS.cyan);
-    fs.mkdirSync(githubDir, { recursive: true });
-    fs.copyFileSync(copilotSrc, copilotDest);
+  // ---------- Step 2: skill selection ----------
+  let selectedSkills;
+  if (skillsFlag) {
+    selectedSkills = skillsFlag === 'all'
+      ? ALL_SKILLS
+      : skillsFlag.split(',').map((s) => s.trim()).filter((s) => ALL_SKILLS.includes(s));
+  } else if (yes) {
+    selectedSkills = ALL_SKILLS;
+  } else {
+    log(`\n${COLORS.bold}Step 2: Which skills do you want?${COLORS.reset}`);
+    log('All 18 skills are recommended — agents reference them by name.\n', COLORS.gray);
+    const all = await askYesNo('  Install all 18 skills?', true);
+    if (all) {
+      selectedSkills = ALL_SKILLS;
+    } else {
+      log('\n  Available skills:', COLORS.cyan);
+      ALL_SKILLS.forEach((s, i) => log(`    ${String(i + 1).padStart(2)}. ${s}`));
+      const picked = await ask('\n  Comma-separated skill names (or numbers): ', '');
+      selectedSkills = picked
+        .split(',')
+        .map((s) => s.trim())
+        .map((s) => /^\d+$/.test(s) ? ALL_SKILLS[parseInt(s, 10) - 1] : s)
+        .filter((s) => ALL_SKILLS.includes(s));
+      if (selectedSkills.length === 0) {
+        log('  No valid skills selected — defaulting to all 18.\n', COLORS.yellow);
+        selectedSkills = ALL_SKILLS;
+      }
+    }
   }
 
-  log('\n✅ VLSI Kit initialized successfully!\n', COLORS.green + COLORS.bold);
+  // ---------- Step 3: copy files ----------
+  log(`\n${COLORS.bold}Installing...${COLORS.reset}`, COLORS.cyan);
+
+  // Copy .agent/ structure (always include agents, workflows, rules, _templates)
+  log('📁 Copying agents, workflows, rules...');
+  fs.mkdirSync(agentDest, { recursive: true });
+  for (const sub of ['agents', 'workflows', 'rules', '_templates']) {
+    const s = path.join(agentSrc, sub);
+    if (fs.existsSync(s)) copyDir(s, path.join(agentDest, sub));
+  }
+
+  // Copy ARCHITECTURE.md
+  const archSrc = path.join(agentSrc, 'ARCHITECTURE.md');
+  if (fs.existsSync(archSrc)) {
+    fs.copyFileSync(archSrc, path.join(agentDest, 'ARCHITECTURE.md'));
+  }
+
+  // Copy selected skills
+  log(`📁 Copying ${selectedSkills.length} skill(s)...`);
+  fs.mkdirSync(path.join(agentDest, 'skills'), { recursive: true });
+  for (const skill of selectedSkills) {
+    const s = path.join(agentSrc, 'skills', skill);
+    if (fs.existsSync(s)) copyDir(s, path.join(agentDest, 'skills', skill));
+  }
+
+  // Write tool configs
+  for (const tool of selectedTools) {
+    for (const t of TOOL_CONFIGS[tool].targets) {
+      const src = path.join(agentSrc, t.src);
+      const dest = path.join(targetDir, t.dest);
+      if (!fs.existsSync(src)) continue;
+      if (fs.existsSync(dest)) {
+        log(`   ${COLORS.gray}skip ${t.dest} (exists)${COLORS.reset}`);
+        continue;
+      }
+      fs.mkdirSync(path.dirname(dest), { recursive: true });
+      fs.copyFileSync(src, dest);
+      log(`📄 ${t.dest}`);
+    }
+  }
+
+  // ---------- Done ----------
+  log(`\n✅ VLSI Kit initialized!\n`, COLORS.green + COLORS.bold);
   log('📦 Installed:', COLORS.cyan);
   log('   • 14 Specialist Agents');
-  log('   • 18 VLSI Skills');
+  log(`   • ${selectedSkills.length} VLSI Skills${selectedSkills.length < 18 ? ` (${ALL_SKILLS.length - selectedSkills.length} skipped)` : ''}`);
   log('   • 10 Workflows');
-  log('   • GEMINI.md (Gemini CLI)');
-  log('   • .github/copilot-instructions.md (GitHub Copilot Chat)\n');
-  log('📖 Next steps:', COLORS.cyan);
+  if (selectedTools.length) {
+    log('\n📄 Tool configs:', COLORS.cyan);
+    selectedTools.forEach((t) => log(`   ✓ ${TOOL_CONFIGS[t].label}`));
+  }
+  log('\n📖 Try it:', COLORS.cyan);
   log('   vlsi-agkit list            # browse skills, agents, workflows');
   log('   vlsi-agkit skill <name>    # read a skill from terminal');
-  log('   vlsi-agkit search <query>  # search the kit');
-  log('   vlsi-agkit verify          # run skill examples (needs make + sim)\n');
+  log('   vlsi-agkit search <query>  # search the kit\n');
 }
 
 // ---------------------------------------------------------------------------
@@ -326,7 +476,11 @@ function showHelp() {
   log('Browse and use VLSI skills, agents, and workflows from the terminal.\n');
   log(`${COLORS.bold}Usage:${COLORS.reset} vlsi-agkit <command> [args]\n`);
   log(`${COLORS.bold}Setup:${COLORS.reset}`);
-  log('  init [--force]              Install the kit in the current project');
+  log('  init                        Interactive install (prompts for tools + skills)');
+  log('  init --yes                  Non-interactive: defaults (Claude+Copilot+Gemini, all skills)');
+  log('  init --tools=<list>         Comma-list of tools (claude,copilot,gemini,cursor,antigravity,all)');
+  log('  init --skills=<list>        Comma-list of skill names or "all"');
+  log('  init --force                Overwrite existing .agent/');
   log('  version                     Print version\n');
   log(`${COLORS.bold}Browse:${COLORS.reset}`);
   log('  list [skills|agents|workflows]');
@@ -362,10 +516,18 @@ function showVersion() {
 // ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
+async function main() {
+  switch (command) {
+    case 'init':
+      await init(args[1] && !args[1].startsWith('-') ? args[1] : '.');
+      break;
+    default:
+      runSync();
+  }
+}
+
+function runSync() {
 switch (command) {
-  case 'init':
-    init(args[1] && !args[1].startsWith('-') ? args[1] : '.');
-    break;
   case 'list':
   case 'ls':
     listCmd(args[1]);
@@ -402,3 +564,6 @@ switch (command) {
     log('Run `vlsi-agkit help` to see available commands.\n', COLORS.gray);
     process.exit(1);
 }
+}
+
+main().catch((e) => { err(e.message); process.exit(1); });

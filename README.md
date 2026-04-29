@@ -10,7 +10,29 @@ A production-grade collection of skills, agents, and workflows that turn Claude 
 npx @kishore-damam/vlsi-agkit init
 ```
 
-Or install globally:
+The installer prompts for:
+1. **Which AI tools** you use (Claude Code, GitHub Copilot, Gemini CLI, Cursor, Google Antigravity) — pick any combination
+2. **Which skills** to install (all 18, or a subset)
+
+Tool configs (`GEMINI.md`, `.github/copilot-instructions.md`, `.cursorrules`, `AGENTS.md`) are written automatically for whatever you select.
+
+### Non-interactive install
+
+```bash
+# Defaults (Claude + Copilot + Gemini, all 18 skills)
+npx @kishore-damam/vlsi-agkit init --yes
+
+# Specific tools
+npx @kishore-damam/vlsi-agkit init --tools=claude,copilot --yes
+
+# Specific skills
+npx @kishore-damam/vlsi-agkit init --tools=all --skills=fsm-design,uvm-coding,timing-constraints --yes
+
+# Everything
+npx @kishore-damam/vlsi-agkit init --tools=all --skills=all --yes
+```
+
+### Global install
 
 ```bash
 npm install -g @kishore-damam/vlsi-agkit
@@ -70,64 +92,27 @@ clean machine.
 
 The `.agent/` folder is **tool-agnostic** — the agents, skills, and workflows are plain Markdown that any AI coding assistant can read. Each tool plugs in differently:
 
-| Tool | How it discovers the kit | Slash commands |
+All 5 tools are **auto-configured** by `init` when you select them — no manual file authoring needed.
+
+| Tool | Config file (auto-written) | Slash commands |
 |---|---|---|
-| **Claude Code** | Reads `.claude/commands/*.md` for slash commands; agents reference `.agent/` paths | ✅ Built-in (`/design`, `/verify`, etc.) |
-| **Google Antigravity** | Reads `AGENTS.md` at project root pointing at `.agent/`; agent personas and skills load on demand | ✅ Via workflow files in `.agent/workflows/` |
-| **Gemini CLI** | Reads `GEMINI.md` at project root (auto-copied by `init`); follows the rules to load agents/skills from `.agent/` | ✅ Via `GEMINI.md` routing |
-| **Cursor** | Add `.cursorrules` or `.cursor/rules/vlsi.mdc` pointing at `.agent/` (see snippet below) | ⚠️ Manual — invoke via `@.agent/workflows/<name>.md` |
-| **GitHub Copilot Chat** | Reads `.github/copilot-instructions.md` (auto-copied by `init`); follows the rules to load agents/skills from `.agent/` | ✅ Via Copilot Chat with workflow file references |
+| **Claude Code** | `.agent/` + `.claude/commands/` | ✅ Built-in (`/design`, `/verify`, etc.) |
+| **GitHub Copilot Chat** | `.github/copilot-instructions.md` | ✅ Via Copilot Chat with workflow file refs |
+| **Gemini CLI** | `GEMINI.md` | ✅ Via `GEMINI.md` routing |
+| **Cursor** | `.cursorrules` | ✅ Via `@.agent/workflows/<name>.md` references |
+| **Google Antigravity** | `AGENTS.md` | ✅ Via workflow files in `.agent/workflows/` |
 
-### Google Antigravity setup
+### How auto-config works
 
-Create `AGENTS.md` at your project root:
+When you pick tools during `init`, the CLI writes the right config file for each:
 
-```markdown
-# Project: VLSI Front-End Development
+- **Claude Code:** zero-config — `.agent/` contents are auto-discovered; `.claude/commands/` provides slash commands
+- **GitHub Copilot:** writes `.github/copilot-instructions.md` with routing rules and skill quick-reference
+- **Gemini CLI:** writes `GEMINI.md` at project root with the same routing
+- **Cursor:** writes `.cursorrules` at project root
+- **Antigravity:** writes `AGENTS.md` at project root
 
-This project uses the VLSI Agent Kit at `.agent/`. Specialist agents and skills
-are defined in Markdown and load on demand.
-
-## Agents
-See `.agent/agents/<name>.md` — 14 specialists covering RTL design, verification,
-synthesis, timing, FPGA, ASIC, debug, and integration.
-
-## Skills
-See `.agent/skills/<name>/SKILL.md` — 18 domain skills with deep `references/`
-and runnable `examples/` per skill.
-
-## Workflows
-See `.agent/workflows/<name>.md` — 10 multi-step procedures for common tasks
-(design, verify, synthesize, debug, lint, timing, review, integrate, plan,
-brainstorm).
-
-## Routing
-Pick the matching agent based on task keywords; load the skills listed in the
-agent's frontmatter; consult workflows for end-to-end procedures.
-```
-
-### Cursor setup
-
-Create `.cursorrules` at your project root:
-
-```
-This project uses the VLSI Agent Kit at `.agent/`.
-
-Before any RTL/verification/synthesis task:
-1. Read `.agent/rules/GEMINI.md` for routing rules.
-2. Pick the matching agent from `.agent/agents/<name>.md` based on the task.
-3. Load the listed skills' `SKILL.md` from `.agent/skills/<name>/`.
-4. Use `.agent/workflows/<name>.md` for multi-step procedures.
-```
-
-### GitHub Copilot Chat (zero-config)
-
-Already wired — `init` writes `.github/copilot-instructions.md`. Copilot Chat will
-automatically apply the routing rules and load agents/skills from `.agent/`.
-
-### Claude Code (zero-config)
-
-Already wired — `init` installs `.claude/commands/` and the agents/skills under `.agent/` are discoverable via `@<agent-name>` mentions and slash commands.
+All five files reference `.agent/` rather than duplicating content, so updates to skills propagate everywhere automatically.
 
 ## What's Included
 
