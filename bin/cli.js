@@ -69,10 +69,10 @@ function listDir(dir, opts = {}) {
 function readFrontmatter(filePath) {
   if (!fs.existsSync(filePath)) return null;
   const content = fs.readFileSync(filePath, 'utf8');
-  const match = content.match(/^---\n([\s\S]*?)\n---/);
+  const match = content.match(/^---\r?\n([\s\S]*?)\r?\n---/);
   if (!match) return null;
   const fm = {};
-  match[1].split('\n').forEach((line) => {
+  match[1].split(/\r?\n/).forEach((line) => {
     const m = line.match(/^([^:]+):\s*(.+?)\s*$/);
     if (m) fm[m[1].trim()] = m[2].replace(/^["']|["']$/g, '');
   });
@@ -120,26 +120,43 @@ const ALL_SKILLS = [
   'timing-constraints', 'uvm-coding', 'waveform-debugging',
 ];
 
-const SKILL_DESCRIPTIONS = {
-  'asic-flows': 'ASIC synthesis & implementation (Synopsys, Cadence)',
-  'axi-protocols': 'AXI4, AXI-Lite, AXI-Stream protocols',
-  'brainstorming': 'Architecture exploration, Socratic questioning',
-  'clean-rtl': 'RTL coding standards and synthesizable patterns',
-  'clock-domain-crossing': 'Synchronizers, async FIFO, handshake CDC ⭐',
-  'dft-patterns': 'Scan, BIST, ATPG',
-  'formal-verification': 'Assertions, properties, model checking',
-  'fpga-flows': 'Vivado, Quartus workflows',
-  'fsm-design': 'State machines, encoding, timeout patterns ⭐',
-  'ip-reuse': 'IP packaging and portability',
-  'low-power-design': 'UPF, power gating, clock gating',
-  'plan-writing': 'Task breakdown and plan authoring',
-  'synthesis-guidelines': 'Synthesis-friendly RTL, attributes, GLS ⭐',
-  'systemverilog-coding': 'logic/reg/wire, interfaces, generate ⭐',
-  'tcl-scripting': 'Tcl scripting for EDA tools',
-  'timing-constraints': 'SDC/XDC clocks, I/O delays, exceptions ⭐',
-  'uvm-coding': 'UVM 1.2 components, sequences, TLM, RAL ⭐',
-  'waveform-debugging': 'Waveform analysis and debug techniques',
-};
+// Read role -> skills mapping from agent frontmatter at runtime.
+// Returns { rtl-designer: { description, skills: [...] }, ... }
+function readRoles() {
+  const packageDir = path.dirname(__dirname);
+  const agentDir = path.join(packageDir, '.agent', 'agents');
+  const roles = {};
+  if (!fs.existsSync(agentDir)) return roles;
+  for (const file of fs.readdirSync(agentDir)) {
+    if (!file.endsWith('.md')) continue;
+    const fm = readFrontmatter(path.join(agentDir, file));
+    if (!fm) continue;
+    const role = file.replace(/\.md$/, '');
+    const skills = (fm.skills || '').split(',').map((s) => s.trim()).filter(Boolean);
+    roles[role] = {
+      description: fm.description || '',
+      skills,
+    };
+  }
+  return roles;
+}
+
+// First-sentence summary, truncated for picker hint
+function shortDesc(s, max = 70) {
+  if (!s) return '';
+  const firstSentence = s.split(/[.!?](\s|$)/)[0];
+  return firstSentence.length > max ? firstSentence.slice(0, max - 1) + '…' : firstSentence;
+}
+
+// Union of skills required by a set of roles, filtered to ALL_SKILLS
+function unionSkills(roles, ROLES) {
+  const set = new Set();
+  for (const r of roles) {
+    if (!ROLES[r]) continue;
+    ROLES[r].skills.forEach((s) => set.add(s));
+  }
+  return Array.from(set).filter((s) => ALL_SKILLS.includes(s));
+}
 
 function parseFlagValue(flag) {
   // Support --flag=value and --flag value
@@ -157,7 +174,11 @@ async function init(targetDir = '.') {
   const force = args.includes('--force');
   const yes = args.includes('-y') || args.includes('--yes');
   const toolsFlag = parseFlagValue('--tools');     // e.g. --tools=claude,copilot
+  const rolesFlag = parseFlagValue('--roles');     // e.g. --roles=rtl-designer,verification-engineer
   const skillsFlag = parseFlagValue('--skills');   // e.g. --skills=fsm-design,uvm-coding or 'all'
+
+  const ROLES = readRoles();
+  const ALL_ROLES = Object.keys(ROLES).sort();
 
   log('\n🚀 VLSI Kit - AI Agent Kit for VLSI Development\n', COLORS.cyan + COLORS.bold);
 
@@ -171,76 +192,104 @@ async function init(targetDir = '.') {
     fs.rmSync(agentDest, { recursive: true, force: true });
   }
 
-  // ---------- Step 1: tool selection (interactive checkbox list) ----------
+  // ---------- Step 1: tool selection (none selected by default) ----------
+  // `--yes` alone (no other flags) → install all tools.
+  // `--yes` with `--roles=...` or `--skills=...` → no tools unless `--tools=...` given.
+  const explicitlyScoped = !!rolesFlag || !!skillsFlag;
   let selectedTools;
   if (toolsFlag) {
     selectedTools = toolsFlag === 'all'
       ? Object.keys(TOOL_CONFIGS)
       : toolsFlag.split(',').map((t) => t.trim()).filter((t) => TOOL_CONFIGS[t]);
+  } else if (yes && !explicitlyScoped) {
+    selectedTools = Object.keys(TOOL_CONFIGS);
   } else if (yes) {
-    selectedTools = ['claude', 'copilot', 'gemini'];
+    selectedTools = [];   // user is being specific — don't auto-install tools
   } else {
-    const defaults = { claude: true, copilot: true, gemini: true, cursor: false, antigravity: false };
     const toolChoices = Object.entries(TOOL_CONFIGS).map(([key, cfg]) => ({
       title: cfg.label,
       description: cfg.description,
       value: key,
-      selected: defaults[key],
+      selected: false,   // nothing pre-selected — user opts in
     }));
 
     const result = await prompts({
       type: 'multiselect',
       name: 'tools',
-      message: 'Which AI tools will you use?',
+      message: 'Which AI tools will you use? (none selected)',
       choices: toolChoices,
-      hint: '- Space to toggle. Enter to confirm. (a) toggle all',
+      hint: '- Space to select. Enter to confirm. (a) toggle all. Skip to install no tool config.',
       instructions: false,
     }, { onCancel: () => process.exit(1) });
 
     selectedTools = result.tools || [];
   }
 
-  // ---------- Step 2: skill selection (interactive checkbox list) ----------
+  // ---------- Step 2: role selection → skills derived from roles ----------
+  let selectedRoles;
   let selectedSkills;
+
   if (skillsFlag) {
+    // Direct skill selection (advanced)
+    selectedRoles = ALL_ROLES;  // include all role .md files even when picking skills directly
     selectedSkills = skillsFlag === 'all'
       ? ALL_SKILLS
       : skillsFlag.split(',').map((s) => s.trim()).filter((s) => ALL_SKILLS.includes(s));
+  } else if (rolesFlag) {
+    selectedRoles = rolesFlag === 'all'
+      ? ALL_ROLES
+      : rolesFlag.split(',').map((r) => r.trim()).filter((r) => ROLES[r]);
+    selectedSkills = unionSkills(selectedRoles, ROLES);
   } else if (yes) {
+    selectedRoles = ALL_ROLES;
     selectedSkills = ALL_SKILLS;
   } else {
-    const skillChoices = ALL_SKILLS.map((s) => ({
-      title: s,
-      value: s,
-      selected: true,   // all selected by default
-      description: SKILL_DESCRIPTIONS[s] || '',
+    const roleChoices = ALL_ROLES.map((r) => ({
+      title: r,
+      description: shortDesc(ROLES[r].description),
+      value: r,
+      selected: false,   // nothing pre-selected
     }));
 
     const result = await prompts({
       type: 'multiselect',
-      name: 'skills',
-      message: 'Which skills do you want? (all selected)',
-      choices: skillChoices,
-      hint: '- Space to toggle. Enter to confirm. (a) toggle all',
+      name: 'roles',
+      message: 'Which roles do you need? (skills come bundled per role)',
+      choices: roleChoices,
+      hint: '- Space to select. Enter to confirm. (a) toggle all',
       instructions: false,
     }, { onCancel: () => process.exit(1) });
 
-    selectedSkills = result.skills || ALL_SKILLS;
-    if (selectedSkills.length === 0) {
-      log('No skills selected — defaulting to all 18.\n', COLORS.yellow);
+    selectedRoles = result.roles || [];
+    if (selectedRoles.length === 0) {
+      log('\nNo roles selected — installing all 14 roles + all 18 skills.\n', COLORS.yellow);
+      selectedRoles = ALL_ROLES;
       selectedSkills = ALL_SKILLS;
+    } else {
+      selectedSkills = unionSkills(selectedRoles, ROLES);
+      log(`\n→ Selected ${selectedRoles.length} role(s), bundling ${selectedSkills.length} skill(s):`, COLORS.cyan);
+      log(`  ${selectedSkills.join(', ')}\n`, COLORS.gray);
     }
   }
 
   // ---------- Step 3: copy files ----------
   log(`\n${COLORS.bold}Installing...${COLORS.reset}`, COLORS.cyan);
 
-  // Copy .agent/ structure (always include agents, workflows, rules, _templates)
-  log('📁 Copying agents, workflows, rules...');
+  // Copy .agent/ structure: workflows, rules, _templates always; agents filtered by role
+  log('📁 Copying workflows, rules, templates...');
   fs.mkdirSync(agentDest, { recursive: true });
-  for (const sub of ['agents', 'workflows', 'rules', '_templates']) {
+  for (const sub of ['workflows', 'rules', '_templates']) {
     const s = path.join(agentSrc, sub);
     if (fs.existsSync(s)) copyDir(s, path.join(agentDest, sub));
+  }
+
+  // Copy only selected role agent files
+  log(`📁 Copying ${selectedRoles.length} role(s)...`);
+  const agentsDest = path.join(agentDest, 'agents');
+  fs.mkdirSync(agentsDest, { recursive: true });
+  for (const role of selectedRoles) {
+    const s = path.join(agentSrc, 'agents', `${role}.md`);
+    if (fs.existsSync(s)) fs.copyFileSync(s, path.join(agentsDest, `${role}.md`));
   }
 
   // Copy ARCHITECTURE.md
@@ -249,7 +298,7 @@ async function init(targetDir = '.') {
     fs.copyFileSync(archSrc, path.join(agentDest, 'ARCHITECTURE.md'));
   }
 
-  // Copy selected skills
+  // Copy selected skills (derived from roles, or directly via --skills flag)
   log(`📁 Copying ${selectedSkills.length} skill(s)...`);
   fs.mkdirSync(path.join(agentDest, 'skills'), { recursive: true });
   for (const skill of selectedSkills) {
@@ -276,12 +325,14 @@ async function init(targetDir = '.') {
   // ---------- Done ----------
   log(`\n✅ VLSI Kit initialized!\n`, COLORS.green + COLORS.bold);
   log('📦 Installed:', COLORS.cyan);
-  log('   • 14 Specialist Agents');
-  log(`   • ${selectedSkills.length} VLSI Skills${selectedSkills.length < 18 ? ` (${ALL_SKILLS.length - selectedSkills.length} skipped)` : ''}`);
-  log('   • 10 Workflows');
+  log(`   • ${selectedRoles.length} role(s): ${selectedRoles.join(', ')}`);
+  log(`   • ${selectedSkills.length} skill(s)`);
+  log('   • 10 workflows');
   if (selectedTools.length) {
-    log('\n📄 Tool configs:', COLORS.cyan);
+    log('\n📄 Tool configs written:', COLORS.cyan);
     selectedTools.forEach((t) => log(`   ✓ ${TOOL_CONFIGS[t].label}`));
+  } else {
+    log('\n   (no tool configs — kit usable via `vlsi-agkit` CLI commands)', COLORS.gray);
   }
   log('\n📖 Try it:', COLORS.cyan);
   log('   vlsi-agkit list            # browse skills, agents, workflows');
@@ -483,10 +534,11 @@ function showHelp() {
   log('Browse and use VLSI skills, agents, and workflows from the terminal.\n');
   log(`${COLORS.bold}Usage:${COLORS.reset} vlsi-agkit <command> [args]\n`);
   log(`${COLORS.bold}Setup:${COLORS.reset}`);
-  log('  init                        Interactive install (prompts for tools + skills)');
-  log('  init --yes                  Non-interactive: defaults (Claude+Copilot+Gemini, all skills)');
+  log('  init                        Interactive install (prompts for tools + roles)');
+  log('  init --yes                  Non-interactive: install ALL tools, roles, and skills');
   log('  init --tools=<list>         Comma-list of tools (claude,copilot,gemini,cursor,antigravity,all)');
-  log('  init --skills=<list>        Comma-list of skill names or "all"');
+  log('  init --roles=<list>         Comma-list of role names or "all" (skills derived from roles)');
+  log('  init --skills=<list>        Direct skill selection (advanced; bypasses role mapping)');
   log('  init --force                Overwrite existing .agent/');
   log('  version                     Print version\n');
   log(`${COLORS.bold}Browse:${COLORS.reset}`);

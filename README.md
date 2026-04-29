@@ -10,26 +10,30 @@ A production-grade collection of skills, agents, and workflows that turn Claude 
 npx @kishore-damam/vlsi-agkit init
 ```
 
-The installer prompts for:
-1. **Which AI tools** you use (Claude Code, GitHub Copilot, Gemini CLI, Cursor, Google Antigravity) — pick any combination
-2. **Which skills** to install (all 18, or a subset)
+The installer is interactive — arrow-key checkbox lists with **nothing pre-selected**:
 
-Tool configs (`GEMINI.md`, `.github/copilot-instructions.md`, `.cursorrules`, `AGENTS.md`) are written automatically for whatever you select.
+1. **Which AI tools** you use (Claude Code, GitHub Copilot, Gemini CLI, Cursor, Google Antigravity)
+2. **Which roles** you need (rtl-designer, verification-engineer, timing-analyst, fpga-specialist, …) — skills come bundled per role from each agent's `skills:` frontmatter, so you don't pick individual skills
 
-### Non-interactive install
+Selecting `verification-engineer` automatically pulls in `uvm-coding`, `formal-verification`, and `waveform-debugging`. Tool configs (`GEMINI.md`, `.github/copilot-instructions.md`, `.cursorrules`, `AGENTS.md`) are only written for tools you actually select.
+
+### Non-interactive install (CI / scripted)
 
 ```bash
-# Defaults (Claude + Copilot + Gemini, all 18 skills)
+# Install EVERYTHING (all 5 tools, all 14 roles, all 18 skills)
 npx @kishore-damam/vlsi-agkit init --yes
 
-# Specific tools
+# Specific tools, all roles
 npx @kishore-damam/vlsi-agkit init --tools=claude,copilot --yes
 
-# Specific skills
-npx @kishore-damam/vlsi-agkit init --tools=all --skills=fsm-design,uvm-coding,timing-constraints --yes
+# Specific roles only — no tool configs unless --tools is also given
+npx @kishore-damam/vlsi-agkit init --roles=rtl-designer,verification-engineer --yes
 
-# Everything
-npx @kishore-damam/vlsi-agkit init --tools=all --skills=all --yes
+# Both tools and roles, scoped
+npx @kishore-damam/vlsi-agkit init --tools=cursor --roles=fpga-specialist --yes
+
+# Direct skill selection (advanced — bypasses the role mapping)
+npx @kishore-damam/vlsi-agkit init --skills=fsm-design,uvm-coding --yes
 ```
 
 ### Global install
