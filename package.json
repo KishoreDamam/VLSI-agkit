@@ -1,6 +1,6 @@
 {
   "name": "@kishore-damam/vlsi-agkit",
-  "version": "1.4.0",
+  "version": "2.0.0",
   "description": "AI Agent Kit for VLSI (FPGA & ASIC) Development",
   "main": "index.js",
   "bin": {
@@ -25,7 +25,10 @@
     "ai",
     "agent",
     "gemini",
-    "cursor"
+    "cursor",
+    "claude",
+    "copilot",
+    "antigravity"
   ],
   "author": "Kishore Damam",
   "license": "MIT",
@@ -35,5 +38,8 @@
   },
   "engines": {
     "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "prompts": "^2.4.2"
   }
 }

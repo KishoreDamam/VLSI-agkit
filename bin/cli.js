@@ -2,31 +2,11 @@
 
 const fs = require('fs');
 const path = require('path');
-const readline = require('readline');
+const prompts = require('prompts');
 const { spawnSync } = require('child_process');
 
 const args = process.argv.slice(2);
 const command = args[0];
-
-// ---------------------------------------------------------------------------
-// Interactive prompt helpers (zero-dependency)
-// ---------------------------------------------------------------------------
-function ask(question, defaultValue = '') {
-  return new Promise((resolve) => {
-    const rl = readline.createInterface({ input: process.stdin, output: process.stdout });
-    rl.question(question, (answer) => {
-      rl.close();
-      resolve(answer.trim() || defaultValue);
-    });
-  });
-}
-
-async function askYesNo(question, defaultYes = true) {
-  const hint = defaultYes ? '[Y/n]' : '[y/N]';
-  const ans = (await ask(`${question} ${hint} `, defaultYes ? 'y' : 'n')).toLowerCase();
-  if (!ans) return defaultYes;
-  return ans === 'y' || ans === 'yes';
-}
 
 const COLORS = {
   reset: '\x1b[0m',
@@ -140,6 +120,27 @@ const ALL_SKILLS = [
   'timing-constraints', 'uvm-coding', 'waveform-debugging',
 ];
 
+const SKILL_DESCRIPTIONS = {
+  'asic-flows': 'ASIC synthesis & implementation (Synopsys, Cadence)',
+  'axi-protocols': 'AXI4, AXI-Lite, AXI-Stream protocols',
+  'brainstorming': 'Architecture exploration, Socratic questioning',
+  'clean-rtl': 'RTL coding standards and synthesizable patterns',
+  'clock-domain-crossing': 'Synchronizers, async FIFO, handshake CDC ⭐',
+  'dft-patterns': 'Scan, BIST, ATPG',
+  'formal-verification': 'Assertions, properties, model checking',
+  'fpga-flows': 'Vivado, Quartus workflows',
+  'fsm-design': 'State machines, encoding, timeout patterns ⭐',
+  'ip-reuse': 'IP packaging and portability',
+  'low-power-design': 'UPF, power gating, clock gating',
+  'plan-writing': 'Task breakdown and plan authoring',
+  'synthesis-guidelines': 'Synthesis-friendly RTL, attributes, GLS ⭐',
+  'systemverilog-coding': 'logic/reg/wire, interfaces, generate ⭐',
+  'tcl-scripting': 'Tcl scripting for EDA tools',
+  'timing-constraints': 'SDC/XDC clocks, I/O delays, exceptions ⭐',
+  'uvm-coding': 'UVM 1.2 components, sequences, TLM, RAL ⭐',
+  'waveform-debugging': 'Waveform analysis and debug techniques',
+};
+
 function parseFlagValue(flag) {
   // Support --flag=value and --flag value
   const idx = args.findIndex((a) => a === flag || a.startsWith(`${flag}=`));
@@ -170,32 +171,36 @@ async function init(targetDir = '.') {
     fs.rmSync(agentDest, { recursive: true, force: true });
   }
 
-  // ---------- Step 1: tool selection ----------
+  // ---------- Step 1: tool selection (interactive checkbox list) ----------
   let selectedTools;
   if (toolsFlag) {
     selectedTools = toolsFlag === 'all'
       ? Object.keys(TOOL_CONFIGS)
       : toolsFlag.split(',').map((t) => t.trim()).filter((t) => TOOL_CONFIGS[t]);
   } else if (yes) {
-    selectedTools = ['claude', 'copilot', 'gemini'];   // sensible default
+    selectedTools = ['claude', 'copilot', 'gemini'];
   } else {
-    log(`${COLORS.bold}Step 1: Which AI tools will you use?${COLORS.reset}`);
-    log('Pick any combination — the kit configures each one for you.\n', COLORS.gray);
-    selectedTools = [];
     const defaults = { claude: true, copilot: true, gemini: true, cursor: false, antigravity: false };
-    for (const [key, cfg] of Object.entries(TOOL_CONFIGS)) {
-      const ok = await askYesNo(
-        `  ${cfg.label.padEnd(22)} ${COLORS.gray}(${cfg.description})${COLORS.reset}`,
-        defaults[key]
-      );
-      if (ok) selectedTools.push(key);
-    }
-    if (selectedTools.length === 0) {
-      log('\n⚠️  No tools selected — installing .agent/ only.\n', COLORS.yellow);
-    }
+    const toolChoices = Object.entries(TOOL_CONFIGS).map(([key, cfg]) => ({
+      title: cfg.label,
+      description: cfg.description,
+      value: key,
+      selected: defaults[key],
+    }));
+
+    const result = await prompts({
+      type: 'multiselect',
+      name: 'tools',
+      message: 'Which AI tools will you use?',
+      choices: toolChoices,
+      hint: '- Space to toggle. Enter to confirm. (a) toggle all',
+      instructions: false,
+    }, { onCancel: () => process.exit(1) });
+
+    selectedTools = result.tools || [];
   }
 
-  // ---------- Step 2: skill selection ----------
+  // ---------- Step 2: skill selection (interactive checkbox list) ----------
   let selectedSkills;
   if (skillsFlag) {
     selectedSkills = skillsFlag === 'all'
@@ -204,24 +209,26 @@ async function init(targetDir = '.') {
   } else if (yes) {
     selectedSkills = ALL_SKILLS;
   } else {
-    log(`\n${COLORS.bold}Step 2: Which skills do you want?${COLORS.reset}`);
-    log('All 18 skills are recommended — agents reference them by name.\n', COLORS.gray);
-    const all = await askYesNo('  Install all 18 skills?', true);
-    if (all) {
+    const skillChoices = ALL_SKILLS.map((s) => ({
+      title: s,
+      value: s,
+      selected: true,   // all selected by default
+      description: SKILL_DESCRIPTIONS[s] || '',
+    }));
+
+    const result = await prompts({
+      type: 'multiselect',
+      name: 'skills',
+      message: 'Which skills do you want? (all selected)',
+      choices: skillChoices,
+      hint: '- Space to toggle. Enter to confirm. (a) toggle all',
+      instructions: false,
+    }, { onCancel: () => process.exit(1) });
+
+    selectedSkills = result.skills || ALL_SKILLS;
+    if (selectedSkills.length === 0) {
+      log('No skills selected — defaulting to all 18.\n', COLORS.yellow);
       selectedSkills = ALL_SKILLS;
-    } else {
-      log('\n  Available skills:', COLORS.cyan);
-      ALL_SKILLS.forEach((s, i) => log(`    ${String(i + 1).padStart(2)}. ${s}`));
-      const picked = await ask('\n  Comma-separated skill names (or numbers): ', '');
-      selectedSkills = picked
-        .split(',')
-        .map((s) => s.trim())
-        .map((s) => /^\d+$/.test(s) ? ALL_SKILLS[parseInt(s, 10) - 1] : s)
-        .filter((s) => ALL_SKILLS.includes(s));
-      if (selectedSkills.length === 0) {
-        log('  No valid skills selected — defaulting to all 18.\n', COLORS.yellow);
-        selectedSkills = ALL_SKILLS;
-      }
     }
   }
 
