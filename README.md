@@ -43,9 +43,12 @@ npm install -g @kishore-damam/vlsi-agkit
 vlsi-agkit init
 ```
 
-### Manual Installation
+### Manual installation
 
-Copy the `.agent` folder to your VLSI project root.
+If you don't want to run `init`, you can clone this repo and copy the relevant
+per-tool subdirectory (e.g. `.cursor/rules/`) directly. The `.agent/` folder
+inside this repo is the source of truth that `init` reads from to generate
+each tool's install — you generally shouldn't copy `.agent/` into your project.
 
 ## Use the kit without an AI tool (CLI mode)
 
@@ -94,29 +97,26 @@ clean machine.
 
 ## Supported AI Tools
 
-The `.agent/` folder is **tool-agnostic** — the agents, skills, and workflows are plain Markdown that any AI coding assistant can read. Each tool plugs in differently:
+`init` writes a **self-contained kit at each tool's native location**, with the
+right frontmatter for that tool. There is no shared `.agent/` folder in your
+project — pick the tools you use and you only see the directories you need.
 
-All 5 tools are **auto-configured** by `init` when you select them — no manual file authoring needed.
-
-| Tool | Config file (auto-written) | Slash commands |
+| Tool | What gets written | Slash commands |
 |---|---|---|
-| **Claude Code** | `.agent/` + `.claude/commands/` | ✅ Built-in (`/design`, `/verify`, etc.) |
-| **GitHub Copilot Chat** | `.github/copilot-instructions.md` | ✅ Via Copilot Chat with workflow file refs |
-| **Gemini CLI** | `GEMINI.md` | ✅ Via `GEMINI.md` routing |
-| **Cursor** | `.cursorrules` | ✅ Via `@.agent/workflows/<name>.md` references |
-| **Google Antigravity** | `AGENTS.md` | ✅ Via workflow files in `.agent/workflows/` |
+| **Claude Code** | `.claude/skills/<name>/SKILL.md`, `.claude/agents/<role>.md`, `.claude/commands/<workflow>.md` | ✅ via `.claude/commands/` |
+| **GitHub Copilot** | `.github/copilot-instructions.md` (index) + `.github/instructions/<skill>.instructions.md` (auto-applied via `applyTo: "**"`) + `.github/prompts/<workflow>.prompt.md` | ✅ via `/<workflow>` prompts |
+| **Gemini CLI** | `GEMINI.md` (router) + `.gemini/{skills,agents,workflows}/<name>.md` | ✅ via GEMINI.md `@file` includes |
+| **Cursor** | `.cursor/rules/<skill>.mdc` (and `agent-<role>.mdc`, `workflow-<name>.mdc`) with `description:` + `alwaysApply: false` | ✅ via Cursor's "rule" mechanism |
+| **Google Antigravity** | `AGENTS.md` (router) + `.agents/{skills,roles,workflows}/<name>.md` | ✅ via `.agents/workflows/` |
 
-### How auto-config works
+If you select multiple tools, the same skill content is written to each tool's
+folder (duplicated by design — no `.agent/` indirection means each tool's
+install is fully self-contained and standalone).
 
-When you pick tools during `init`, the CLI writes the right config file for each:
+### Selecting no tool (CLI-only mode)
 
-- **Claude Code:** zero-config — `.agent/` contents are auto-discovered; `.claude/commands/` provides slash commands
-- **GitHub Copilot:** writes `.github/copilot-instructions.md` with routing rules and skill quick-reference
-- **Gemini CLI:** writes `GEMINI.md` at project root with the same routing
-- **Cursor:** writes `.cursorrules` at project root
-- **Antigravity:** writes `AGENTS.md` at project root
-
-All five files reference `.agent/` rather than duplicating content, so updates to skills propagate everywhere automatically.
+If you skip every tool, `init` writes nothing. The `vlsi-agkit` binary still
+works because it falls back to the `.agent/` bundled inside the npm package.
 
 ## What's Included
 

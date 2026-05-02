@@ -44,20 +44,31 @@ There is no test suite (`npm test` is a stub). `make verify` is the closest thin
 
 ## Architecture
 
-### `.agent/` is the payload
+### `.agent/` is the *source* payload (npm-bundled, never copied to user projects)
 
-Everything user-facing lives here. The CLI and all 5 supported AI tools point at this tree rather than duplicating content, so a skill edit propagates everywhere.
+Everything authoritative lives here. `init` reads from this tree and **generates** per-tool installs at the user's project. The folder is also bundled inside the published npm package so `vlsi-agkit list/skill/...` work via fallback even when no local install exists.
 
 - `.agent/agents/*.md` — 14 specialist personas. Frontmatter `skills:` lists which skills the agent pulls in. The `init` flow expands a chosen role into its skill set via this field.
 - `.agent/skills/<name>/SKILL.md` — index card (≤300 lines), with optional `references/` (deep-dive markdown) and `examples/` (compilable SV + Makefile). Skill dirs prefixed with `_` (`_templates`, `_evals`) are reserved and ignored by both `make` and the CLI.
-- `.agent/workflows/*.md` — slash-command procedures (`/design`, `/verify`, `/timing`, …). Claude Code surfaces these via `.claude/commands/`.
-- `.agent/rules/{AGENTS,GEMINI,copilot-instructions,cursorrules}.md` — templates the `init` command writes into the user's project root for non-Claude tools.
+- `.agent/workflows/*.md` — slash-command procedures (`/design`, `/verify`, `/timing`, …). The Claude Code generator copies these to `.claude/commands/`; Copilot to `.github/prompts/`; etc.
+- `.agent/rules/*.md` — legacy router templates (kept for reference; the active install path is the per-tool generators in `bin/cli.js`).
 
-### CLI shape (`bin/cli.js`, single file, ~630 lines)
+### Per-tool generators (`bin/cli.js`)
 
-- `findAgentRoot()` resolves `.agent/` from cwd first, then falls back to the bundled copy inside the npm package — this is what makes `npx vlsi-agkit list` work from any directory.
-- `readFrontmatter()` is a hand-rolled YAML-frontmatter parser. It must handle CRLF (Windows) — the most recent breaking commit (`7dbc200`) was a fix here. Don't reach for a YAML lib; keep the parser tolerant of `\r\n` and quoted values.
-- `init` is interactive (arrow-key checkbox lists via `prompts`), with **nothing pre-selected by default**. Roles map → skills via agent frontmatter; tool selection drives which config files get written. Flags `--tools`, `--roles`, `--skills`, `--yes` make it scriptable.
+`init` runs one **generator function** per selected tool (`installClaude`, `installCopilot`, `installGemini`, `installCursor`, `installAntigravity`). Each generator:
+
+1. Reads source SKILL.md / agent / workflow markdown from `.agent/` in the npm package.
+2. Splits the YAML frontmatter via `splitFrontmatter()` and rewrites it via `fmYaml()` to match the target tool's expectations (e.g. Copilot wants `applyTo: "**"`, Cursor wants `description:` + `alwaysApply: false`).
+3. Writes the result to the tool's native directory (`.claude/skills/`, `.github/instructions/`, `.gemini/skills/`, `.cursor/rules/`, `.agents/skills/`).
+
+Output layout per tool: see README "Supported AI Tools" table. Multiple tools = duplicated content (deliberate — each tool's install is self-contained, no shared `.agent/` indirection).
+
+### CLI shape (`bin/cli.js`)
+
+- `findAgentRoot()` resolves `.agent/` from cwd first, then falls back to the bundled copy inside the npm package — this is what makes `npx vlsi-agkit list` work from any directory, including projects where `init` was never run.
+- `readFrontmatter()` and `splitFrontmatter()` are hand-rolled YAML parsers. They must handle CRLF (Windows). Don't reach for a YAML lib; keep them tolerant of `\r\n` and quoted values.
+- `fmYaml()` quotes any value containing YAML-significant chars (`* & ! | > % @ : # ` " '`) — the most common case is glob patterns like `applyTo: "**"`.
+- `init` is interactive (arrow-key checkbox lists via `prompts`), with **nothing pre-selected by default**. Roles map → skills via agent frontmatter; tool selection drives which generators run. Flags `--tools`, `--roles`, `--skills`, `--yes` make it scriptable.
 - Subcommands: `init | list | skill | agent | workflow | search | verify | version | help`.
 
 ### Skill verification tiers
