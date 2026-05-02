@@ -1,11 +1,22 @@
 ---
 name: formal-verification
-description: Assertions, properties, and formal verification techniques.
+description: Use when writing SystemVerilog Assertions (immediate or concurrent), property/sequence operators, assumption and cover setup for formal tools (JasperGold, VC Formal), or assertion patterns for handshakes, FIFOs, or AXI.
 ---
 
 # Formal Verification
 
 > Assertion-based verification and formal methods.
+
+---
+
+## When to use
+
+- Proving control-path properties on FSMs, arbiters, FIFOs, and protocol interfaces.
+- Writing SVA (immediate `assert`/concurrent `property`) inside RTL or as a bind module.
+- Setting up assumptions/covers for formal tools (JasperGold, VC Formal, Symbiyosys).
+- Closing coverage holes that simulation can't reach (deep state, rare interleavings).
+
+**Not for:** datapath equivalence (use LEC); large arithmetic units (state explosion); replacing functional simulation entirely.
 
 ---
 
@@ -180,3 +191,24 @@ cover property (@(posedge clk)
 | Cover properties | Prove reachability |
 | Avoid $past deeply | Tool performance |
 | Group related assertions | Maintainability |
+
+---
+
+## Anti-patterns (do NOT do this)
+
+1. **Asserting on data values you can't constrain.** A property `assert(out == expected)` with no model of `expected` will fire forever; instead assert *relationships* (handshake, ordering, exclusivity).
+2. **Forgetting `disable iff (rst)`.** Reset windows trigger phantom failures that mask real bugs.
+3. **Replacing assumptions with assertions on inputs.** Inputs need `assume`; only DUT outputs are `assert`. Confusing the two either over-constrains the proof or proves nothing.
+4. **Deep `$past(sig, N)` chains.** Each step expands BMC state; rewrite as a small auxiliary register.
+5. **Empty cover bin.** Properties that are vacuously true still pass — always pair `assert` with a `cover` that proves the antecedent is reachable.
+
+---
+
+## Validation checklist
+
+- [ ] Every concurrent property has `disable iff (!rst_n)` (or equivalent).
+- [ ] Inputs are constrained with `assume`; outputs proven with `assert`.
+- [ ] Every `assert` has a paired `cover` showing the precondition fires.
+- [ ] No properties depend on un-modeled external state (memory contents, etc.).
+- [ ] Bound depth set explicitly; tool reports proven (not bounded-only) for safety properties where possible.
+- [ ] Counter-examples reviewed — failure means a real bug or a missing assumption, not "tighten the assertion".

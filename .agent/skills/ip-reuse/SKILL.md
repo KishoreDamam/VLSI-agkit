@@ -1,11 +1,22 @@
 ---
 name: ip-reuse
-description: IP packaging, parameterization, and portability.
+description: Use when packaging a reusable IP block — directory layout, parameterization, standard-interface wrappers (AXI/Avalon), documentation templates, or reviewing portability before reuse across projects.
 ---
 
 # IP Reuse
 
 > Design IPs for reusability across projects.
+
+---
+
+## When to use
+
+- Packaging an internally-developed block for use in another project or by another team.
+- Promoting a one-off RTL module into a parameterized library component.
+- Reviewing a third-party IP before integration (checking the contract it exposes).
+- Writing the README/spec/timing docs that go with delivered IP.
+
+**Not for:** project-specific wrappers that won't be reused (don't pay the abstraction tax); FPGA IP-block flows that bind to a vendor IP catalog (use Vivado IP Packager / Quartus IP Catalog).
 
 ---
 
@@ -126,13 +137,24 @@ endmodule
 
 ---
 
-## Checklist for Reusable IP
+## Anti-patterns (do NOT do this)
 
-- [ ] Fully parameterized
-- [ ] No hardcoded values
-- [ ] Standard interfaces
-- [ ] Self-contained (no external deps)
-- [ ] Documented parameters
-- [ ] Example testbench
-- [ ] Constraints included
-- [ ] Lint clean
+1. **Hardcoded widths / depths.** `parameter` everything that might vary (data width, address width, FIFO depth, reset polarity).
+2. **Project-specific clock or reset names baked into the IP.** Use generic `clk`/`rst_n` ports and let the integrator connect.
+3. **`include "rtl/foo.svh"` with absolute project paths.** Use relative `+incdir` or pure-package definitions.
+4. **Mixing AXI4 and AXI4-Lite without separate wrapper modules.** Integrators want one interface per port, not a parameter that switches protocol.
+5. **No example testbench or constraints file.** The first integrator becomes the involuntary first verifier — they will not be happy.
+6. **Bumping the IP version without a changelog.** Downstream users can't tell breaking changes from bug fixes.
+
+---
+
+## Validation checklist (for releasing reusable IP)
+
+- [ ] Fully parameterized; no hardcoded magic numbers in the RTL.
+- [ ] All ports use standard interfaces (AXI/Avalon/AXI-Stream) or are explicitly documented.
+- [ ] Self-contained: no external `+incdir` outside the IP root.
+- [ ] Every parameter documented (range, default, effect).
+- [ ] Example testbench compiles and runs PASS on a known simulator.
+- [ ] Synthesis-ready constraints (SDC) included; lint clean against project ruleset.
+- [ ] README covers: features, parameters, interfaces, resource estimates, timing assumptions.
+- [ ] Versioned (semver) with a CHANGELOG entry for every release.

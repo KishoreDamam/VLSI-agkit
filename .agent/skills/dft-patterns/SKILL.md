@@ -1,11 +1,23 @@
 ---
 name: dft-patterns
-description: Design-for-Test patterns including scan, BIST, and ATPG.
+description: Use when inserting scan chains, MBIST, or LBIST, writing JTAG/TAP-controller logic, evaluating ATPG coverage, or fixing DFT rule violations on non-scannable structures (latches, gated clocks, async reset).
 ---
 
 # DFT Patterns
 
 > Design-for-Test techniques for manufacturing test.
+
+---
+
+## When to use
+
+- Targeting an ASIC where manufacturing test coverage is a sign-off requirement.
+- Inserting scan chains, MBIST/LBIST controllers, or JTAG/TAP logic.
+- Reviewing RTL for DFT rule violations (latches, gated clocks, async resets without test mux).
+- Hitting low ATPG coverage and need to identify untestable structures.
+- Wrapping reusable IP with scan boundaries (IEEE 1500).
+
+**Not for:** FPGA designs (no manufacturing test); pre-RTL exploration (DFT decisions come after architecture is stable).
 
 ---
 
@@ -159,3 +171,27 @@ insert_dft
 report_scan_path
 write_test_protocol test.spf
 ```
+
+---
+
+## Anti-patterns (do NOT do this)
+
+1. **Latches in the design without a test bypass.** Transparent latches break scan and ATPG; either remove them (almost always the right answer) or wrap with a test mux.
+2. **Gated clocks without test enable.** Clock gates must observe `test_en` (or use a `CKLNQD` ICG with `TE`); otherwise scan shifts don't reach gated registers.
+3. **Async resets driven by combinational logic.** Async-reset DRC requires a mux on the reset path so test mode pulls a clean value.
+4. **Black-box memories without MBIST.** Embedded SRAMs need MBIST; otherwise no manufacturing fault coverage on the array.
+5. **Sharing scan chains across power domains without isolation.** Shifting through a powered-down domain corrupts the chain.
+6. **Reporting ATPG coverage on stuck-at only.** Modern flows require transition-fault and at-speed coverage too.
+
+---
+
+## Validation checklist
+
+- [ ] No transparent latches in the design (lint clean) or all latches scan-isolated.
+- [ ] All clock gates have `test_en` observability; verified by DFT DRC.
+- [ ] Async resets bypassed in scan/test mode.
+- [ ] Stuck-at ATPG coverage ≥ 99%, transition ≥ project target.
+- [ ] MBIST inserted on every embedded memory; BIST controller verified in simulation.
+- [ ] JTAG TAP passes IEEE 1149.1 boundary scan compliance test.
+- [ ] Scan chains balanced (length within tool tolerance) and routed across power domains correctly.
+- [ ] Test patterns regenerated and re-verified after final ECO.

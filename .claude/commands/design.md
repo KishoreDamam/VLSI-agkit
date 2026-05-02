@@ -17,8 +17,8 @@ Read the following files before designing:
 - `.agent/skills/fsm-design/SKILL.md` if FSMs are involved
 
 For target-specific guidance, also read:
-- `.agent/agents/fpga-specialist.md` and `.agent/skills/fpga-flows/SKILL.md` for FPGA targets
-- `.agent/agents/asic-specialist.md` and `.agent/skills/asic-flows/SKILL.md` for ASIC targets
+- `.agent/agents/fpga-specialist.md` plus `vivado-flow` or `quartus-flow` for FPGA targets
+- `.agent/agents/asic-specialist.md` plus `synopsys-flow` or `cadence-flow` for ASIC targets
 
 ## Behavior
 

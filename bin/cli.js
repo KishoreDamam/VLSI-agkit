@@ -113,11 +113,12 @@ const TOOL_CONFIGS = {
 };
 
 const ALL_SKILLS = [
-  'asic-flows', 'axi-protocols', 'brainstorming', 'clean-rtl',
-  'clock-domain-crossing', 'dft-patterns', 'formal-verification', 'fpga-flows',
+  'axi-protocols', 'brainstorming', 'cadence-flow', 'clean-rtl',
+  'clock-domain-crossing', 'dft-patterns', 'formal-verification',
   'fsm-design', 'ip-reuse', 'low-power-design', 'plan-writing',
-  'synthesis-guidelines', 'systemverilog-coding', 'tcl-scripting',
-  'timing-constraints', 'uvm-coding', 'waveform-debugging',
+  'quartus-flow', 'synopsys-flow', 'synthesis-guidelines',
+  'systemverilog-coding', 'tcl-scripting', 'timing-constraints',
+  'uvm-coding', 'vivado-flow', 'waveform-debugging',
 ];
 
 // Read role -> skills mapping from agent frontmatter at runtime.

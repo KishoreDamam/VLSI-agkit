@@ -1,7 +1,7 @@
 ---
 name: fpga-specialist
 description: Expert in FPGA development using Vivado and Quartus. Use for FPGA project setup, IP integration, bitstream generation, and FPGA-specific optimization. Triggers on FPGA, Vivado, Quartus, Xilinx, Intel, Altera, bitstream, IP core.
-skills: fpga-flows, ip-reuse, timing-constraints
+skills: vivado-flow, quartus-flow, ip-reuse, timing-constraints
 ---
 
 # FPGA Specialist - Xilinx/Intel FPGA Expert

@@ -1,11 +1,23 @@
 ---
 name: waveform-debugging
-description: Waveform analysis and debug techniques.
+description: Use when debugging from waveforms — VCD/FSDB dumping, selective dumping, signal tracing with `$display` or file logging, recognizing common bug patterns (X-propagation, off-by-one, glitches), or applying binary-search/reverse-trace debug strategies.
 ---
 
 # Waveform Debugging
 
 > Techniques for analyzing simulation waveforms.
+
+---
+
+## When to use
+
+- A test fails and you have a VCD/FSDB but don't know which signal to look at first.
+- Bug reproduces only at a specific time/cycle and you need to narrow down the cause.
+- An `X` or `Z` propagates through the design and you need to trace its origin.
+- Comparing a known-good run vs. a failing run to find the divergence point.
+- Sim runtimes are dominated by waveform dumping; need to scope it down.
+
+**Not for:** post-silicon debug (use ILA/logic analyzer); coverage-hole analysis (use the coverage report, not the waveform).
 
 ---
 
@@ -148,3 +160,24 @@ Compare signals at divergence point
 | Verdi | View FSDB |
 | nWave | Cadence waveform |
 | Vivado Simulator | Xilinx |
+
+---
+
+## Anti-patterns (do NOT do this)
+
+1. **Dumping the entire DUT for a long simulation.** VCDs become multi-GB; load times kill iteration speed. Scope dumps to the failing block.
+2. **Staring at waveforms without a hypothesis.** Form a hypothesis first ("output should be 1 at cycle N"), then go to that signal at that time.
+3. **Trusting the displayed value of an `X` source.** A red `X` hides whatever value drove it; trace upstream until you find the signal that's *not* `X`.
+4. **Comparing waveforms by eye across long runs.** Use logfile diffs or compare-traces tools; eyeballs miss single-cycle drift.
+5. **Adding `$display` permanently to RTL for debug.** Use a separate debug module or `ifdef DEBUG` — leftover `$display`s leak into release simulations and slow them down.
+
+---
+
+## Validation checklist
+
+- [ ] Failing simulation produces a waveform reproducible from a known seed.
+- [ ] Dump scope limited to the suspect hierarchy (not the whole DUT).
+- [ ] Hypothesis written down before opening the waveform viewer.
+- [ ] Origin of any `X`/`Z` traced to a specific RTL line, not just observed.
+- [ ] If comparing good-vs-bad runs, divergence cycle identified before deeper analysis.
+- [ ] Bug fix re-runs cleanly with the same testbench seed.

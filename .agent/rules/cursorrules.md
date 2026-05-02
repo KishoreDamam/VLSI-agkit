@@ -59,8 +59,10 @@ Before any RTL design, verification, synthesis, timing, or CDC task:
 | RTL standards | `clean-rtl` |
 | Formal verification | `formal-verification` |
 | Waveform debug | `waveform-debugging` |
-| FPGA flows | `fpga-flows` |
-| ASIC flows | `asic-flows` |
+| Xilinx Vivado | `vivado-flow` |
+| Intel Quartus | `quartus-flow` |
+| Synopsys (DC, VCS, SpyGlass, DFTC, VC Formal) | `synopsys-flow` |
+| Cadence (Genus, Xcelium, JasperGold) | `cadence-flow` |
 | Low-power design | `low-power-design` |
 | DFT (scan, BIST, ATPG) | `dft-patterns` |
 | IP reuse | `ip-reuse` |

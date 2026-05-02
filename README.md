@@ -20,7 +20,7 @@ Selecting `verification-engineer` automatically pulls in `uvm-coding`, `formal-v
 ### Non-interactive install (CI / scripted)
 
 ```bash
-# Install EVERYTHING (all 5 tools, all 14 roles, all 18 skills)
+# Install EVERYTHING (all 5 tools, all 14 roles, all 20 skills)
 npx @kishore-damam/vlsi-agkit init --yes
 
 # Specific tools, all roles
@@ -123,7 +123,7 @@ All five files reference `.agent/` rather than duplicating content, so updates t
 | Component     | Count | Description                                                        |
 | ------------- | ----- | ------------------------------------------------------------------ |
 | **Agents**    | 14    | Specialist AI personas (RTL, Verification, Synthesis, Timing, etc.) |
-| **Skills**    | 18    | Domain-specific knowledge modules                                  |
+| **Skills**    | 20    | Domain-specific knowledge modules                                  |
 | **Workflows** | 10    | Slash command procedures                                           |
 
 ## Skills
@@ -150,8 +150,10 @@ These six skills ship with full reference docs, compiled examples, validation ga
 | `clean-rtl` | RTL coding standards, naming, synthesizable patterns |
 | `formal-verification` | Assertions, properties, model checking |
 | `waveform-debugging` | Waveform analysis, debug techniques |
-| `fpga-flows` | Vivado/Quartus workflows |
-| `asic-flows` | Synopsys/Cadence flows |
+| `vivado-flow` | Xilinx Vivado synthesis, impl, ILA/VIO debug |
+| `quartus-flow` | Intel Quartus compile flow, M10K/M20K, DSP inference |
+| `synopsys-flow` | DC, VCS, SpyGlass, DFT Compiler, VC Formal |
+| `cadence-flow` | Genus, Xcelium, JasperGold |
 | `axi-protocols` | AXI4, AXI-Lite, AXI-Stream |
 | `low-power-design` | UPF, power gating, clock gating |
 | `dft-patterns` | Scan, BIST, ATPG |

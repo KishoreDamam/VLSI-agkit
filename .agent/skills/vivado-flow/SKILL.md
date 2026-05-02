@@ -1,17 +1,27 @@
 ---
-name: fpga-flows
-description: FPGA development flows for Vivado and Quartus.
+name: vivado-flow
+description: Use when running Xilinx Vivado from Tcl — project setup, synth_design/place_design/route_design, BRAM/DSP/FIFO inference, ILA/VIO debug insertion, XDC properties, or trimming LUT/BRAM/DSP utilization.
 ---
 
-# FPGA Flows
+# Vivado Flow
 
-> Development workflows for Xilinx and Intel FPGAs.
+> Xilinx Vivado synthesis, implementation, and debug from Tcl.
 
 ---
 
-## Vivado Flow (Xilinx)
+## When to use
 
-### Non-Project Mode (Tcl)
+- Standing up a Vivado project from Tcl (reproducible build, CI, no GUI dependency).
+- Running synth_design / opt_design / place_design / route_design / write_bitstream.
+- Inferring BRAM, DSP48, or FIFO from RTL via attributes.
+- Inserting ILA/VIO debug cores for in-system observation.
+- Trimming LUT/BRAM/DSP usage when fit fails.
+
+**Not for:** Intel Quartus (use `quartus-flow`); ASIC synthesis (use `synopsys-flow` or `cadence-flow`); deep timing-closure methodology (use `timing-constraints` + `synthesis-guidelines`).
+
+---
+
+## Non-Project Mode (Tcl)
 
 ```tcl
 # Read sources
@@ -38,7 +48,9 @@ report_timing_summary -file reports/timing.rpt
 write_bitstream -force output/design.bit
 ```
 
-### Project Mode (Tcl)
+---
+
+## Project Mode (Tcl)
 
 ```tcl
 # Create project
@@ -58,42 +70,11 @@ wait_on_run impl_1
 
 ---
 
-## Quartus Flow (Intel)
+## Inference Patterns
 
-### Tcl Flow
-
-```tcl
-package require ::quartus::project
-package require ::quartus::flow
-
-# Create project
-project_new my_proj -overwrite - family "Cyclone V"
-
-# Settings
-set_global_assignment -name DEVICE 5CSEMA5F31C6
-set_global_assignment -name TOP_LEVEL_ENTITY top_module
-set_global_assignment -name SYSTEMVERILOG_FILE [glob src/*.sv]
-set_global_assignment -name SDC_FILE constraints/timing.sdc
-
-# Compile
-execute_flow -compile
-
-# Reports
-load_package report
-load_report
-write_report_panel -file reports/timing.rpt "Timing Analyzer||*"
-
-project_close
-```
-
----
-
-## Common FPGA Patterns
-
-### BRAM Inference
+### BRAM
 
 ```systemverilog
-// Single-port BRAM
 (* ram_style = "block" *)
 logic [31:0] mem [0:1023];
 
@@ -104,10 +85,9 @@ always_ff @(posedge clk) begin
 end
 ```
 
-### DSP Inference
+### DSP48
 
 ```systemverilog
-// MAC unit using DSP
 (* use_dsp = "yes" *)
 logic signed [17:0] a, b;
 logic signed [47:0] acc;
@@ -120,10 +100,9 @@ always_ff @(posedge clk) begin
 end
 ```
 
-### FIFO with IP
+### FIFO IP
 
 ```tcl
-# Vivado FIFO IP
 create_ip -name fifo_generator -vendor xilinx.com \
     -library ip -version 13.2 -module_name sync_fifo
 
@@ -138,7 +117,7 @@ generate_target all [get_ips sync_fifo]
 
 ---
 
-## Debugging
+## In-system Debug
 
 ### ILA Insertion
 
@@ -175,7 +154,7 @@ set_property port_width 8 [get_debug_ports u_vio/probe_out0]
 
 ---
 
-## FPGA-Specific Coding
+## FPGA-Specific RTL
 
 ```systemverilog
 // Clock enable instead of clock gating
@@ -184,7 +163,7 @@ always_ff @(posedge clk) begin
         data <= new_data;
 end
 
-// Use synchronous reset for FPGA
+// Synchronous reset (preferred on Xilinx flops)
 always_ff @(posedge clk) begin
     if (!rst_n)
         data <= '0;
@@ -192,3 +171,26 @@ always_ff @(posedge clk) begin
         data <= new_data;
 end
 ```
+
+---
+
+## Anti-patterns (do NOT do this)
+
+1. **Project-mode GUI clicks not captured in Tcl.** Builds become irreproducible; export the Tcl recipe and check it in.
+2. **Async reset on Xilinx flops.** Most Xilinx primitives prefer synchronous reset; async reset bloats routing and complicates recovery/removal timing.
+3. **Hand-instantiated `RAMB36` / `DSP48E1` primitives.** Hurts portability across families; let synthesis infer from a clean RTL pattern instead.
+4. **DSP inference broken by signed/unsigned mismatch.** Use `signed`/`logic signed` consistently or the multiplier maps to LUTs.
+5. **`set_property MARK_DEBUG true` left in for production.** Inserts ILA debug nets; clean up before release.
+6. **Ignoring fit failures by relaxing constraints.** Fix the design or partition; over-relaxed constraints hide real timing problems.
+
+---
+
+## Validation checklist
+
+- [ ] Project rebuilt from a clean checkout using only the Tcl in the repo (no GUI dependency).
+- [ ] Synthesis log: zero critical warnings; latch warnings investigated.
+- [ ] Utilization within target (LUT/FF/BRAM/DSP) with margin for ECOs.
+- [ ] Timing reports: WNS ≥ 0 for all clock groups (setup) and WHS ≥ 0 (hold).
+- [ ] Power estimate within board/thermal budget.
+- [ ] Bitstream reproducible: same sources + same Tcl + same Vivado version → same bit-for-bit output.
+- [ ] No `MARK_DEBUG` / ILA cores in release bitstream.

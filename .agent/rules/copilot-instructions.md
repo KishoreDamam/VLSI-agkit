@@ -64,8 +64,10 @@ locate and apply the right context from `.agent/`:
 | RTL coding standards | `.agent/skills/clean-rtl/SKILL.md` |
 | Formal verification, assertions | `.agent/skills/formal-verification/SKILL.md` |
 | Waveform debug techniques | `.agent/skills/waveform-debugging/SKILL.md` |
-| FPGA flows (Vivado/Quartus) | `.agent/skills/fpga-flows/SKILL.md` |
-| ASIC flows (Synopsys/Cadence) | `.agent/skills/asic-flows/SKILL.md` |
+| Xilinx Vivado flow | `.agent/skills/vivado-flow/SKILL.md` |
+| Intel Quartus flow | `.agent/skills/quartus-flow/SKILL.md` |
+| Synopsys flow (DC, VCS, SpyGlass, DFTC, VC Formal) | `.agent/skills/synopsys-flow/SKILL.md` |
+| Cadence flow (Genus, Xcelium, JasperGold) | `.agent/skills/cadence-flow/SKILL.md` |
 | Low-power design, UPF | `.agent/skills/low-power-design/SKILL.md` |
 | DFT (scan, BIST, ATPG) | `.agent/skills/dft-patterns/SKILL.md` |
 | IP packaging and reuse | `.agent/skills/ip-reuse/SKILL.md` |

@@ -34,8 +34,8 @@ Production-grade skills (full reference + examples):
 
 Other skills:
 - `clean-rtl`, `formal-verification`, `waveform-debugging`
-- `fpga-flows`, `asic-flows`, `axi-protocols`
-- `low-power-design`, `dft-patterns`, `ip-reuse`
+- `vivado-flow`, `quartus-flow`, `synopsys-flow`, `cadence-flow`
+- `axi-protocols`, `low-power-design`, `dft-patterns`, `ip-reuse`
 - `tcl-scripting`, `brainstorming`, `plan-writing`
 
 ## Workflows (`.agent/workflows/`)

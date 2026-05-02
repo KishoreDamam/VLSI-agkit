@@ -111,8 +111,8 @@ When auto-applying an agent, inform the user:
 
 | Project Type | Primary Agent | Skills |
 |--------------|---------------|--------|
-| **FPGA** | `fpga-specialist` | fpga-flows, timing-constraints |
-| **ASIC** | `asic-specialist` | asic-flows, dft-patterns |
+| **FPGA** | `fpga-specialist` | vivado-flow, quartus-flow, timing-constraints |
+| **ASIC** | `asic-specialist` | synopsys-flow, cadence-flow, dft-patterns |
 | **IP Design** | `rtl-designer` | clean-rtl, ip-reuse |
 | **Verification** | `verification-engineer` | uvm-coding |
 
@@ -163,6 +163,6 @@ When auto-applying an agent, inform the user:
 - **RTL**: `clean-rtl`, `systemverilog-coding`, `fsm-design`
 - **Verify**: `uvm-coding`, `formal-verification`
 - **Timing**: `timing-constraints`, `clock-domain-crossing`
-- **Implementation**: `synthesis-guidelines`, `fpga-flows`, `asic-flows`
+- **Implementation**: `synthesis-guidelines`, `vivado-flow`, `quartus-flow`, `synopsys-flow`, `cadence-flow`
 
 ---

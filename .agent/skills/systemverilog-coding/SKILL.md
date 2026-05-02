@@ -1,7 +1,6 @@
 ---
-name: "systemverilog-coding"
-description: "SystemVerilog coding patterns: logic/reg/wire rules, interfaces, always blocks, generate, struct drivers, and anti-patterns."
-type: coding
+name: systemverilog-coding
+description: Use when writing SystemVerilog RTL and unsure about `logic` vs `reg` vs `wire`, `always_comb` vs `always @*` vs `always @(...)`, interface/modport syntax, multiple drivers on struct fields, or pipelined modules with generate-for.
 ---
 
 # SystemVerilog Patterns
