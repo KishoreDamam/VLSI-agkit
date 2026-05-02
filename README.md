@@ -15,7 +15,7 @@ The installer is interactive — arrow-key checkbox lists with **nothing pre-sel
 1. **Which AI tools** you use (Claude Code, GitHub Copilot, Gemini CLI, Cursor, Google Antigravity)
 2. **Which roles** you need (rtl-designer, verification-engineer, timing-analyst, fpga-specialist, …) — skills come bundled per role from each agent's `skills:` frontmatter, so you don't pick individual skills
 
-Selecting `verification-engineer` automatically pulls in `uvm-coding`, `formal-verification`, and `waveform-debugging`. Tool configs (`GEMINI.md`, `.github/copilot-instructions.md`, `.cursorrules`, `AGENTS.md`) are only written for tools you actually select.
+Selecting `verification-engineer` automatically pulls in `uvm-coding`, `formal-verification`, and `waveform-debugging`. Tool installs (`.claude/`, `.github/`, `GEMINI.md` + `.gemini/`, `.cursor/rules/`, `AGENTS.md` + `.agents/`) are only written for tools you actually select.
 
 ### Non-interactive install (CI / scripted)
 

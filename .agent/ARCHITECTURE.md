@@ -20,11 +20,11 @@ VLSI Agent Kit is a modular system consisting of:
 .agent/
 ├── ARCHITECTURE.md          # This file
 ├── agents/                  # 14 Specialist Agents
-├── skills/                  # 18 Skills
-├── workflows/               # 10 Slash Commands
-├── rules/                   # Global Rules
-└── scripts/                 # Validation Scripts
+├── skills/                  # 20 Skills
+└── workflows/               # 10 Slash Commands
 ```
+
+This is the **source payload** that ships inside the npm package. The `vlsi-agkit init` CLI reads from here and generates per-tool installs at the user's project (no `.agent/` is written to user projects — see top-level README "Supported AI Tools").
 
 ---
 

@@ -51,7 +51,6 @@ Everything authoritative lives here. `init` reads from this tree and **generates
 - `.agent/agents/*.md` — 14 specialist personas. Frontmatter `skills:` lists which skills the agent pulls in. The `init` flow expands a chosen role into its skill set via this field.
 - `.agent/skills/<name>/SKILL.md` — index card (≤300 lines), with optional `references/` (deep-dive markdown) and `examples/` (compilable SV + Makefile). Skill dirs prefixed with `_` (`_templates`, `_evals`) are reserved and ignored by both `make` and the CLI.
 - `.agent/workflows/*.md` — slash-command procedures (`/design`, `/verify`, `/timing`, …). The Claude Code generator copies these to `.claude/commands/`; Copilot to `.github/prompts/`; etc.
-- `.agent/rules/*.md` — legacy router templates (kept for reference; the active install path is the per-tool generators in `bin/cli.js`).
 
 ### Per-tool generators (`bin/cli.js`)
 
