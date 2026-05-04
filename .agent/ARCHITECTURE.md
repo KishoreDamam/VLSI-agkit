@@ -9,7 +9,7 @@
 VLSI Agent Kit is a modular system consisting of:
 
 - **14 Specialist Agents** - Role-based AI personas for VLSI domains
-- **18 Skills** - Domain-specific knowledge modules
+- **20 Skills** - Domain-specific knowledge modules
 - **10 Workflows** - Slash command procedures
 
 ---
@@ -20,11 +20,11 @@ VLSI Agent Kit is a modular system consisting of:
 .agent/
 ├── ARCHITECTURE.md          # This file
 ├── agents/                  # 14 Specialist Agents
-├── skills/                  # 18 Skills
-├── workflows/               # 10 Slash Commands
-├── rules/                   # Global Rules
-└── scripts/                 # Validation Scripts
+├── skills/                  # 20 Skills
+└── workflows/               # 10 Slash Commands
 ```
+
+This is the **source payload** that ships inside the npm package. The `vlsi-agkit init` CLI reads from here and generates per-tool installs at the user's project (no `.agent/` is written to user projects — see top-level README "Supported AI Tools").
 
 ---
 
@@ -39,9 +39,9 @@ Specialist AI personas for different VLSI domains.
 | `verification-engineer` | UVM, formal, coverage | uvm-coding, formal-verification |
 | `synthesis-engineer` | Logic synthesis | synthesis-guidelines, timing-constraints |
 | `timing-analyst` | STA, timing closure | timing-constraints, clock-domain-crossing |
-| `fpga-specialist` | Vivado, Quartus, IPs | fpga-flows, ip-reuse |
-| `asic-specialist` | Synopsys, Cadence | asic-flows, dft-patterns |
-| `physical-design-engineer` | P&R, floorplanning | asic-flows, low-power-design |
+| `fpga-specialist` | Vivado, Quartus, IPs | vivado-flow, quartus-flow, ip-reuse |
+| `asic-specialist` | Synopsys, Cadence | synopsys-flow, cadence-flow, dft-patterns |
+| `physical-design-engineer` | P&R, floorplanning | synopsys-flow, cadence-flow, low-power-design |
 | `debugger` | Waveform analysis | waveform-debugging, tcl-scripting |
 | `lint-reviewer` | Code quality | clean-rtl |
 | `documentation-writer` | Specs, docs | - |
@@ -77,8 +77,10 @@ Modular knowledge domains that agents can load on-demand.
 | ----- | ----------- |
 | `synthesis-guidelines` | Synthesis-friendly RTL, directives, timing optimization, GLS |
 | `timing-constraints` | SDC/XDC, clocks, I/O delays, multicycle paths |
-| `fpga-flows` | Vivado/Quartus workflows |
-| `asic-flows` | Synopsys/Cadence flows |
+| `vivado-flow` | Xilinx Vivado synthesis, impl, ILA/VIO |
+| `quartus-flow` | Intel Quartus compile flow, M10K/M20K, DSP |
+| `synopsys-flow` | DC, VCS, SpyGlass, DFT Compiler, VC Formal |
+| `cadence-flow` | Genus, Xcelium, JasperGold |
 
 ### Design Techniques
 
@@ -150,7 +152,7 @@ skill-name/
 | Metric | Value |
 | ------ | ----- |
 | **Total Agents** | 14 |
-| **Total Skills** | 18 |
+| **Total Skills** | 20 |
 | **Total Workflows** | 10 |
 | **Coverage** | FPGA + ASIC front-end |
 
@@ -164,7 +166,7 @@ skill-name/
 | Verify Design | `verification-engineer` | uvm-coding, formal-verification |
 | Synthesize | `synthesis-engineer` | synthesis-guidelines |
 | Fix Timing | `timing-analyst` | timing-constraints, clock-domain-crossing |
-| FPGA Flow | `fpga-specialist` | fpga-flows |
-| ASIC Flow | `asic-specialist` | asic-flows, dft-patterns |
+| FPGA Flow | `fpga-specialist` | vivado-flow, quartus-flow |
+| ASIC Flow | `asic-specialist` | synopsys-flow, cadence-flow, dft-patterns |
 | Debug | `debugger` | waveform-debugging |
 | Plan Project | `project-planner` | brainstorming, plan-writing |

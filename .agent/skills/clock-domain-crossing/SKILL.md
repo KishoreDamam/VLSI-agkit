@@ -1,7 +1,6 @@
 ---
-name: "clock-domain-crossing"
-description: "CDC techniques — synchronizers, async FIFOs, handshake protocols, and SDC constraints for safe multi-clock designs."
-type: flow
+name: clock-domain-crossing
+description: Use when a signal crosses between two asynchronous clocks, you see metastability or CDC lint warnings, designing async FIFOs or req/ack handshakes between clock domains, or writing `set_false_path`/`set_max_delay` SDC for clock-domain boundaries.
 ---
 
 # Clock Domain Crossing

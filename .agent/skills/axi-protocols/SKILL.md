@@ -1,11 +1,22 @@
 ---
 name: axi-protocols
-description: AXI4, AXI4-Lite, and AXI4-Stream bus protocols.
+description: Use when designing or verifying an AXI4, AXI4-Lite, or AXI4-Stream interface — handshake VALID/READY rules, burst types, channel dependency ordering, register-slave implementation, or stream processing.
 ---
 
 # AXI Protocols
 
 > ARM AMBA AXI bus protocol patterns.
+
+---
+
+## When to use
+
+- Connecting an IP to an SoC fabric or microcontroller subsystem.
+- Implementing a register/CSR slave (AXI4-Lite) or DMA master (AXI4 full).
+- Building or verifying streaming interfaces (AXI4-Stream) between processing blocks.
+- Debugging handshake hangs, channel-ordering deadlocks, or RRESP/BRESP errors.
+
+**Not for:** AHB/APB (different protocol family); custom point-to-point handshakes (use plain `valid`/`ready` instead of full AXI overhead).
 
 ---
 
@@ -242,3 +253,25 @@ Read Data depends on:
 | Separate read/write FSMs | Simpler logic |
 | Handle backpressure | No data loss |
 | Check RRESP/BRESP | Error handling |
+
+---
+
+## Anti-patterns (do NOT do this)
+
+1. **Asserting `READY` combinationally from `VALID`.** Creates a combinational loop across the link; many vendor IPs will deadlock or violate the AXI spec rule that `READY` may depend on `VALID` but not vice versa.
+2. **Driving `VALID` low after asserting it without a handshake.** AXI requires `VALID` to remain asserted until `READY` is seen.
+3. **Reordering responses without `ID` discipline.** AXI4 allows out-of-order completion only when transactions have distinct `AxID`; reordering same-ID responses violates the spec.
+4. **Skipping `BRESP`/`RRESP` checks.** Silent SLVERR/DECERR masks real bugs.
+5. **AXI4 full for a 32-bit register block.** Use AXI4-Lite — full AXI burst logic is wasted area.
+
+---
+
+## Validation checklist
+
+- [ ] Every channel obeys "VALID stable until READY seen" (lint check or assertion).
+- [ ] No combinational path from a channel's `VALID` to its own `READY`.
+- [ ] Write response (`B*`) returned only after the last `WLAST` beat is accepted.
+- [ ] Read data (`R*`) returned only after `AR*` accepted; `RLAST` matches `ARLEN`.
+- [ ] Outstanding transactions limited to declared depth (no unbounded growth).
+- [ ] `RRESP`/`BRESP` checked downstream; SLVERR/DECERR propagated, not dropped.
+- [ ] AXI-Stream `TLAST` aligned with packet boundary; `TKEEP`/`TSTRB` consistent.

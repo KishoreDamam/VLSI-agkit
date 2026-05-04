@@ -1,11 +1,22 @@
 ---
 name: tcl-scripting
-description: Tcl scripting for EDA tools.
+description: Use when writing Tcl for EDA tools (Vivado, Design Compiler, Quartus) — variables, lists, file I/O, control flow, procedures, or tool-specific command idioms.
 ---
 
 # Tcl Scripting
 
 > Tcl patterns for EDA tool automation.
+
+---
+
+## When to use
+
+- Automating a Vivado/Quartus/DC/Genus build, run, or report step.
+- Looking up Tcl syntax that's specifically used inside EDA-tool consoles.
+- Writing reusable `procs` for project setup, regression launching, or report parsing.
+- Debugging Tcl errors from synth/sim scripts (variable scoping, list vs string, `expr` precision).
+
+**Not for:** general Tcl programming (use the official Tcl docs); long pipelines that fight Tcl's data model (write the orchestration layer in Python and call Tcl only at the tool boundary).
 
 ---
 
@@ -102,38 +113,29 @@ compile_design "my_top" "medium"
 
 ---
 
-## EDA Tool Patterns
+## EDA-tool Tcl idioms
 
-### Vivado
-
-```tcl
-# Create project
-create_project proj ./proj -part xc7a100t
-
-# Add files
-add_files [glob ./rtl/*.sv]
-set_property top top_module [current_fileset]
-
-# Run flow
-launch_runs synth_1
-wait_on_run synth_1
-launch_runs impl_1 -to_step write_bitstream
-wait_on_run impl_1
-```
-
-### Design Compiler
+These patterns recur across Vivado, DC, Genus, Quartus, and JasperGold. Tool-specific command sequences live in the per-tool flow skills (`vivado-flow`, `quartus-flow`, `synopsys-flow`, `cadence-flow`).
 
 ```tcl
-# Read design
-analyze -format sverilog [glob rtl/*.sv]
-elaborate top_module
-link
+# Iterate a Tcl collection (pins/cells/nets) — collections are NOT lists
+foreach_in_collection cell [get_cells -hier *] {
+    set name [get_property full_name $cell]
+    # ...
+}
 
-# Compile
-compile_ultra
+# Filter by attribute
+set ff_cells [filter_collection [get_cells -hier *] "is_sequential == true"]
 
-# Report
-report_timing > timing.rpt
+# Walk a hierarchy
+foreach inst [get_cells -hier -filter {ref_name =~ "*FIFO*"}] { ... }
+
+# Read attributes safely
+if {[llength [get_property -quiet name $obj]] == 0} { ... }
+
+# Export reports with timestamps for traceability
+set ts [clock format [clock seconds] -format "%Y%m%d_%H%M%S"]
+report_timing > rpt/timing_${ts}.rpt
 ```
 
 ---
@@ -162,3 +164,26 @@ if {[catch {risky_command} err]} {
     puts "Success"
 }
 ```
+
+---
+
+## Anti-patterns (do NOT do this)
+
+1. **Double-quoting commands you mean to evaluate.** `puts "[get_cells *]"` works; `puts "{get_cells *}"` prints the literal. Curly braces suppress substitution.
+2. **Using `==` for strings.** Tcl's `==` is numeric only; use `eq`/`ne` for strings.
+3. **Forgetting that `expr` is the only way to do math.** `set x [expr {$a + $b}]` — and always brace the expression so Tcl doesn't double-substitute.
+4. **Returning lists by `return $list` and reading them as strings.** Use `lindex` / `foreach`, not `string` ops.
+5. **Hardcoding Vivado/DC paths in the script.** Take them from environment or a `config.tcl`.
+6. **Silently swallowing tool errors.** Always check `catch` return code; let CI fail fast.
+7. **Writing 200-line `proc`s.** Tcl debug is hard enough — keep procs short and pure.
+
+---
+
+## Validation checklist
+
+- [ ] Every script runs from a fresh shell (no reliance on prior environment).
+- [ ] All paths come from arguments or environment, not hardcoded site-specific strings.
+- [ ] Error from a tool command (`synth_design`, `read_verilog`, etc.) terminates the script with a non-zero exit code.
+- [ ] `expr` arguments are braced (`{...}`) to avoid double substitution.
+- [ ] No use of `==`/`!=` on strings (use `eq`/`ne`).
+- [ ] Reports written to a known output directory, with timestamps if reproducibility matters.

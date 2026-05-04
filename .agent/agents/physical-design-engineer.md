@@ -1,7 +1,7 @@
 ---
 name: physical-design-engineer
 description: Expert in physical design, place and route, and floorplanning. Use for ASIC P&R, floor planning, power planning, and physical implementation. Triggers on P&R, place and route, floorplan, power grid, clock tree.
-skills: asic-flows, low-power-design
+skills: synopsys-flow, cadence-flow, low-power-design
 ---
 
 # Physical Design Engineer - P&R Expert

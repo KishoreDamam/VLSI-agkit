@@ -1,7 +1,6 @@
 ---
-name: "timing-constraints"
-description: "SDC/XDC timing constraints: clock declarations, I/O delays, path exceptions, and Xilinx-specific XDC properties for synthesis and implementation."
-type: flow
+name: timing-constraints
+description: Use when authoring SDC or XDC, declaring `create_clock`/`create_generated_clock`, setting `set_input_delay`/`set_output_delay`, applying multicycle or false-path exceptions, or fixing Xilinx-specific XDC properties for synthesis and implementation.
 ---
 
 # Timing Constraints

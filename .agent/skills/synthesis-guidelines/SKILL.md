@@ -1,7 +1,6 @@
 ---
-name: "synthesis-guidelines"
-description: "Synthesis-friendly RTL coding, synthesis directives, timing optimization, and gate-level sim readiness for Vivado and Design Compiler."
-type: flow
+name: synthesis-guidelines
+description: Use when running Vivado `synth_design` or Design Compiler, hitting QoR or timing failures, choosing synthesis attributes (`KEEP`, `DONT_TOUCH`, retiming), debugging X-propagation, or preparing RTL for gate-level simulation.
 ---
 
 # Synthesis Guidelines

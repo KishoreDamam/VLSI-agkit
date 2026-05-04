@@ -1,7 +1,6 @@
 ---
 name: clean-rtl
-description: RTL coding standards, naming conventions, and synthesizable patterns. Core skill for all RTL development.
-priority: CRITICAL
+description: Use when writing or reviewing any synthesizable Verilog/SystemVerilog — module structure, naming conventions, reset style, port ordering, latch prevention, sequential vs combinational coding rules, or pre-commit RTL self-checks.
 ---
 
 # Clean RTL - VLSI Coding Standards

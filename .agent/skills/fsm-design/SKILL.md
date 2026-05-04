@@ -1,7 +1,6 @@
 ---
-name: "fsm-design"
-description: "FSM coding style, state encoding, latch avoidance, timeout patterns, and code-review checklist for RTL state machines"
-type: coding
+name: fsm-design
+description: Use when writing or reviewing a Verilog/SystemVerilog state machine, debugging unintended latches in `case` blocks, choosing one/two/three-process style or state encoding (binary/one-hot/gray), or adding timeout counters and SVA assertions to FSMs.
 ---
 
 # FSM Design

@@ -1,11 +1,23 @@
 ---
 name: low-power-design
-description: Low-power techniques including UPF, clock gating, and power optimization.
+description: Use when adding clock gating or operand isolation, writing UPF power-domain/isolation/retention specs, applying multi-Vt or DVFS, or running PrimeTime PX power analysis.
 ---
 
 # Low-Power Design
 
 > Techniques for reducing power consumption.
+
+---
+
+## When to use
+
+- Power budget is a hard requirement (battery, thermal, datacenter cap).
+- Adding clock gating, operand isolation, or activity-reduction transforms to RTL.
+- Authoring UPF for multi-voltage/multi-domain SoCs (isolation, retention, level shifters).
+- Choosing multi-Vt cells or implementing DVFS / power-state tables.
+- Running PrimeTime PX or equivalent to measure switching/leakage power.
+
+**Not for:** functional bugs that "look like" power issues (debug them as logic bugs first); FPGA designs without a power constraint (vendor synthesis usually handles clock gating automatically).
 
 ---
 
@@ -184,3 +196,26 @@ report_power -hierarchy > power.rpt
 | Minimize activity | Less switching |
 | Power gate idle blocks | Zero leakage |
 | Use low-voltage domains | V² reduction |
+
+---
+
+## Anti-patterns (do NOT do this)
+
+1. **Hand-instantiated clock gates without ICG cells.** Hand-rolled `assign gclk = clk & en` glitches; use the library ICG (e.g. `CKLNQD`) or a `clock_gating_check`-aware synthesis directive.
+2. **Crossing power domains without isolation cells.** Floating outputs from a powered-down domain corrupt the always-on side; UPF must declare isolation strategy.
+3. **Power gating without retention on state you need to preserve.** Wake-up restarts from reset, not last-state — usually a functional bug.
+4. **Operand isolation that gates control signals.** Only data inputs to wide arithmetic should be isolated; gating control causes deadlocks.
+5. **Optimizing for power before timing closes.** Multi-Vt and clock gating change critical paths; close timing first, then trim power.
+6. **Trusting RTL-level power estimates.** Pre-synthesis numbers ignore clock-tree and routing power; only post-CTS PrimeTime PX is meaningful.
+
+---
+
+## Validation checklist
+
+- [ ] Every `clock_gate` is an instantiated library ICG (no glitchy AND-gate gating).
+- [ ] UPF defines power domains, supply nets, isolation, and retention for every always-off block.
+- [ ] Level shifters present on every signal crossing voltage boundaries.
+- [ ] Power-state table covers all legal voltage/state combinations; illegal states proven unreachable.
+- [ ] Functional simulation passes with UPF-aware sim (corruption + isolation behavior modeled).
+- [ ] Post-CTS power report meets budget across worst-case activity factor.
+- [ ] No retention registers in the always-on domain (waste of area).

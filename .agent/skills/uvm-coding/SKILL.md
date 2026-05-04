@@ -1,7 +1,6 @@
 ---
-name: "uvm-coding"
-description: "UVM testbench coding patterns: components, sequences, TLM analysis ports, scoreboards, register model, and phasing."
-type: coding
+name: uvm-coding
+description: Use when building a UVM testbench — writing sequence items with constraints, sequences/drivers/monitors, scoreboards with TLM analysis ports and dual FIFOs, the register layer (RAL), or wiring up UVM phases.
 ---
 
 # UVM Coding Patterns

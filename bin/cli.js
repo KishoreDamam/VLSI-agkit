@@ -83,41 +83,39 @@ function readFrontmatter(filePath) {
 // init — install kit in current project (interactive)
 // ---------------------------------------------------------------------------
 
-// Tool config: which template file goes to which destination
+// Each tool gets a self-contained install at its native location.
+// No `.agent/` is written to the user's project — bundled `.agent/`
+// inside the npm package keeps `vlsi-agkit` CLI working as a fallback.
 const TOOL_CONFIGS = {
   claude: {
     label: 'Claude Code',
-    description: 'reads .agent/ + .claude/commands/ (already inside .agent)',
-    targets: [], // Claude is zero-config — handled by .agent copy itself
+    description: 'writes .claude/{skills,agents,commands}/',
   },
   copilot: {
-    label: 'GitHub Copilot Chat',
-    description: 'writes .github/copilot-instructions.md',
-    targets: [{ src: 'rules/copilot-instructions.md', dest: '.github/copilot-instructions.md' }],
+    label: 'GitHub Copilot',
+    description: 'writes .github/{copilot-instructions.md,instructions/,prompts/}',
   },
   gemini: {
     label: 'Gemini CLI',
-    description: 'writes GEMINI.md',
-    targets: [{ src: 'rules/GEMINI.md', dest: 'GEMINI.md' }],
+    description: 'writes GEMINI.md + .gemini/{skills,agents,workflows}/',
   },
   cursor: {
     label: 'Cursor',
-    description: 'writes .cursorrules',
-    targets: [{ src: 'rules/cursorrules.md', dest: '.cursorrules' }],
+    description: 'writes .cursor/rules/*.mdc',
   },
   antigravity: {
     label: 'Google Antigravity',
-    description: 'writes AGENTS.md',
-    targets: [{ src: 'rules/AGENTS.md', dest: 'AGENTS.md' }],
+    description: 'writes AGENTS.md + .agents/{skills,workflows}/',
   },
 };
 
 const ALL_SKILLS = [
-  'asic-flows', 'axi-protocols', 'brainstorming', 'clean-rtl',
-  'clock-domain-crossing', 'dft-patterns', 'formal-verification', 'fpga-flows',
+  'axi-protocols', 'brainstorming', 'cadence-flow', 'clean-rtl',
+  'clock-domain-crossing', 'dft-patterns', 'formal-verification',
   'fsm-design', 'ip-reuse', 'low-power-design', 'plan-writing',
-  'synthesis-guidelines', 'systemverilog-coding', 'tcl-scripting',
-  'timing-constraints', 'uvm-coding', 'waveform-debugging',
+  'quartus-flow', 'synopsys-flow', 'synthesis-guidelines',
+  'systemverilog-coding', 'tcl-scripting', 'timing-constraints',
+  'uvm-coding', 'vivado-flow', 'waveform-debugging',
 ];
 
 // Read role -> skills mapping from agent frontmatter at runtime.
@@ -166,12 +164,292 @@ function parseFlagValue(flag) {
   return args[idx + 1] || null;
 }
 
+// ---------------------------------------------------------------------------
+// Frontmatter helpers — split, parse, rewrite per tool
+// ---------------------------------------------------------------------------
+
+function splitFrontmatter(content) {
+  const m = content.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n([\s\S]*)$/);
+  if (!m) return { fm: {}, body: content };
+  const fm = {};
+  m[1].split(/\r?\n/).forEach((line) => {
+    const mm = line.match(/^([^:]+):\s*(.*)$/);
+    if (mm) fm[mm[1].trim()] = mm[2].trim().replace(/^["']|["']$/g, '');
+  });
+  return { fm, body: m[2] };
+}
+
+function fmYaml(obj) {
+  const lines = ['---'];
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined || v === null) continue;
+    if (typeof v === 'boolean') { lines.push(`${k}: ${v}`); continue; }
+    const s = String(v);
+    // Quote anything that isn't a plain word/sentence (has YAML-significant chars)
+    const needsQuote = /[:#"'`*&!|>%@]/.test(s) || s.startsWith('-') || s === '';
+    lines.push(`${k}: ${needsQuote ? JSON.stringify(s) : s}`);
+  }
+  lines.push('---', '');
+  return lines.join('\n');
+}
+
+function readFile(p) {
+  return fs.readFileSync(p, 'utf8');
+}
+
+function writeFile(p, content) {
+  fs.mkdirSync(path.dirname(p), { recursive: true });
+  fs.writeFileSync(p, content);
+}
+
+// ---------------------------------------------------------------------------
+// Per-tool installers — each writes a self-contained kit for one tool
+// ---------------------------------------------------------------------------
+
+const ALL_WORKFLOWS = [
+  'brainstorm', 'debug', 'design', 'integrate', 'lint',
+  'plan', 'review', 'synthesize', 'timing', 'verify',
+];
+
+// Read raw skill files (SKILL.md + references/* + examples/*) for a skill
+function loadSkill(agentSrc, skill) {
+  const dir = path.join(agentSrc, 'skills', skill);
+  const skillFile = path.join(dir, 'SKILL.md');
+  if (!fs.existsSync(skillFile)) return null;
+  const { fm, body } = splitFrontmatter(readFile(skillFile));
+  // Collect all auxiliary files (references/, examples/)
+  const aux = [];
+  for (const sub of ['references', 'examples']) {
+    const subDir = path.join(dir, sub);
+    if (!fs.existsSync(subDir)) continue;
+    for (const f of listDir(subDir, { filesOnly: true })) {
+      aux.push({ relPath: path.join(sub, f), content: readFile(path.join(subDir, f)) });
+    }
+  }
+  return { name: skill, fm, body, aux };
+}
+
+function loadAgent(agentSrc, role) {
+  const file = path.join(agentSrc, 'agents', `${role}.md`);
+  if (!fs.existsSync(file)) return null;
+  const { fm, body } = splitFrontmatter(readFile(file));
+  return { name: role, fm, body };
+}
+
+function loadWorkflow(agentSrc, name) {
+  const file = path.join(agentSrc, 'workflows', `${name}.md`);
+  if (!fs.existsSync(file)) return null;
+  const { fm, body } = splitFrontmatter(readFile(file));
+  return { name, fm, body };
+}
+
+// ---- Claude Code: .claude/{skills,agents,commands}/ ----
+function installClaude(agentSrc, targetDir, roles, skills) {
+  const base = path.join(targetDir, '.claude');
+  let count = 0;
+  for (const skill of skills) {
+    const s = loadSkill(agentSrc, skill);
+    if (!s) continue;
+    const out = fmYaml({ name: s.fm.name || s.name, description: s.fm.description || '' }) + s.body;
+    writeFile(path.join(base, 'skills', s.name, 'SKILL.md'), out);
+    for (const a of s.aux) {
+      writeFile(path.join(base, 'skills', s.name, a.relPath), a.content);
+    }
+    count++;
+  }
+  for (const role of roles) {
+    const a = loadAgent(agentSrc, role);
+    if (!a) continue;
+    const out = fmYaml({ name: a.fm.name || a.name, description: a.fm.description || '' }) + a.body;
+    writeFile(path.join(base, 'agents', `${a.name}.md`), out);
+  }
+  for (const wf of ALL_WORKFLOWS) {
+    const w = loadWorkflow(agentSrc, wf);
+    if (!w) continue;
+    const out = fmYaml({ description: w.fm.description || '' }) + w.body;
+    writeFile(path.join(base, 'commands', `${w.name}.md`), out);
+  }
+  return { dir: '.claude/', skills: count };
+}
+
+// ---- GitHub Copilot: .github/{copilot-instructions.md,instructions/,prompts/} ----
+function installCopilot(agentSrc, targetDir, roles, skills) {
+  const base = path.join(targetDir, '.github');
+  // Top-level instructions: routing index
+  const idx = [
+    '# VLSI Kit — Copilot routing',
+    '',
+    'This project uses the VLSI Agent Kit. Skill instructions are in `.github/instructions/`',
+    'and apply to all files. Slash-style prompts are in `.github/prompts/`.',
+    '',
+    '## Roles installed',
+    '',
+    ...roles.map((r) => `- \`${r}\``),
+    '',
+    '## Skills installed',
+    '',
+    ...skills.map((s) => `- \`${s}\``),
+    '',
+    '## Workflow prompts',
+    '',
+    ...ALL_WORKFLOWS.map((w) => `- \`/${w}\``),
+    '',
+  ].join('\n');
+  writeFile(path.join(base, 'copilot-instructions.md'), idx);
+
+  // Per-skill instruction files (auto-applied via applyTo)
+  for (const skill of skills) {
+    const s = loadSkill(agentSrc, skill);
+    if (!s) continue;
+    const out = fmYaml({ applyTo: '**', description: s.fm.description || '' }) + s.body;
+    writeFile(path.join(base, 'instructions', `${s.name}.instructions.md`), out);
+    // Skip aux files for Copilot — only top-level skill instructions are auto-loaded
+  }
+
+  // Per-role instruction files
+  for (const role of roles) {
+    const a = loadAgent(agentSrc, role);
+    if (!a) continue;
+    const out = fmYaml({ applyTo: '**', description: a.fm.description || '' }) + a.body;
+    writeFile(path.join(base, 'instructions', `agent-${a.name}.instructions.md`), out);
+  }
+
+  // Per-workflow prompt files (invoked manually)
+  for (const wf of ALL_WORKFLOWS) {
+    const w = loadWorkflow(agentSrc, wf);
+    if (!w) continue;
+    const out = fmYaml({ mode: 'agent', description: w.fm.description || '' }) + w.body;
+    writeFile(path.join(base, 'prompts', `${w.name}.prompt.md`), out);
+  }
+  return { dir: '.github/', skills: skills.length };
+}
+
+// ---- Gemini CLI: GEMINI.md + .gemini/{skills,agents,workflows}/ ----
+function installGemini(agentSrc, targetDir, roles, skills) {
+  const base = path.join(targetDir, '.gemini');
+  const idx = [
+    '# VLSI Kit — Gemini routing',
+    '',
+    'This project uses the VLSI Agent Kit.',
+    'Skills, agents, and workflows live under `.gemini/`.',
+    '',
+    '## Skills',
+    '',
+    ...skills.map((s) => `- @.gemini/skills/${s}.md`),
+    '',
+    '## Agents (roles)',
+    '',
+    ...roles.map((r) => `- @.gemini/agents/${r}.md`),
+    '',
+    '## Workflows',
+    '',
+    ...ALL_WORKFLOWS.map((w) => `- /${w} → @.gemini/workflows/${w}.md`),
+    '',
+  ].join('\n');
+  writeFile(path.join(targetDir, 'GEMINI.md'), idx);
+
+  for (const skill of skills) {
+    const s = loadSkill(agentSrc, skill);
+    if (!s) continue;
+    const out = fmYaml({ name: s.fm.name || s.name, description: s.fm.description || '' }) + s.body;
+    writeFile(path.join(base, 'skills', `${s.name}.md`), out);
+  }
+  for (const role of roles) {
+    const a = loadAgent(agentSrc, role);
+    if (!a) continue;
+    const out = fmYaml({ name: a.fm.name || a.name, description: a.fm.description || '' }) + a.body;
+    writeFile(path.join(base, 'agents', `${a.name}.md`), out);
+  }
+  for (const wf of ALL_WORKFLOWS) {
+    const w = loadWorkflow(agentSrc, wf);
+    if (!w) continue;
+    const out = fmYaml({ description: w.fm.description || '' }) + w.body;
+    writeFile(path.join(base, 'workflows', `${w.name}.md`), out);
+  }
+  return { dir: '.gemini/ + GEMINI.md', skills: skills.length };
+}
+
+// ---- Cursor: .cursor/rules/*.mdc ----
+function installCursor(agentSrc, targetDir, roles, skills) {
+  const base = path.join(targetDir, '.cursor', 'rules');
+  for (const skill of skills) {
+    const s = loadSkill(agentSrc, skill);
+    if (!s) continue;
+    const out = fmYaml({ description: s.fm.description || '', alwaysApply: false }) + s.body;
+    writeFile(path.join(base, `${s.name}.mdc`), out);
+  }
+  for (const role of roles) {
+    const a = loadAgent(agentSrc, role);
+    if (!a) continue;
+    const out = fmYaml({ description: a.fm.description || '', alwaysApply: false }) + a.body;
+    writeFile(path.join(base, `agent-${a.name}.mdc`), out);
+  }
+  for (const wf of ALL_WORKFLOWS) {
+    const w = loadWorkflow(agentSrc, wf);
+    if (!w) continue;
+    const out = fmYaml({ description: w.fm.description || '', alwaysApply: false }) + w.body;
+    writeFile(path.join(base, `workflow-${w.name}.mdc`), out);
+  }
+  return { dir: '.cursor/rules/', skills: skills.length };
+}
+
+// ---- Antigravity: AGENTS.md + .agents/{skills,workflows}/ ----
+function installAntigravity(agentSrc, targetDir, roles, skills) {
+  const base = path.join(targetDir, '.agents');
+  const idx = [
+    '# VLSI Kit — Agent routing',
+    '',
+    'This project follows the AGENTS.md convention.',
+    'Skills, role agents, and workflows live under `.agents/`.',
+    '',
+    '## Skills',
+    '',
+    ...skills.map((s) => `- \`.agents/skills/${s}.md\``),
+    '',
+    '## Roles',
+    '',
+    ...roles.map((r) => `- \`.agents/roles/${r}.md\``),
+    '',
+    '## Workflows',
+    '',
+    ...ALL_WORKFLOWS.map((w) => `- \`.agents/workflows/${w}.md\``),
+    '',
+  ].join('\n');
+  writeFile(path.join(targetDir, 'AGENTS.md'), idx);
+
+  for (const skill of skills) {
+    const s = loadSkill(agentSrc, skill);
+    if (!s) continue;
+    const out = fmYaml({ name: s.fm.name || s.name, description: s.fm.description || '' }) + s.body;
+    writeFile(path.join(base, 'skills', `${s.name}.md`), out);
+  }
+  for (const role of roles) {
+    const a = loadAgent(agentSrc, role);
+    if (!a) continue;
+    const out = fmYaml({ name: a.fm.name || a.name, description: a.fm.description || '' }) + a.body;
+    writeFile(path.join(base, 'roles', `${a.name}.md`), out);
+  }
+  for (const wf of ALL_WORKFLOWS) {
+    const w = loadWorkflow(agentSrc, wf);
+    if (!w) continue;
+    const out = fmYaml({ description: w.fm.description || '' }) + w.body;
+    writeFile(path.join(base, 'workflows', `${w.name}.md`), out);
+  }
+  return { dir: 'AGENTS.md + .agents/', skills: skills.length };
+}
+
+const TOOL_INSTALLERS = {
+  claude: installClaude,
+  copilot: installCopilot,
+  gemini: installGemini,
+  cursor: installCursor,
+  antigravity: installAntigravity,
+};
+
 async function init(targetDir = '.') {
   const packageDir = path.dirname(__dirname);
   const agentSrc = path.join(packageDir, '.agent');
-  const agentDest = path.join(targetDir, '.agent');
 
-  const force = args.includes('--force');
   const yes = args.includes('-y') || args.includes('--yes');
   const toolsFlag = parseFlagValue('--tools');     // e.g. --tools=claude,copilot
   const rolesFlag = parseFlagValue('--roles');     // e.g. --roles=rtl-designer,verification-engineer
@@ -182,15 +460,9 @@ async function init(targetDir = '.') {
 
   log('\n🚀 VLSI Kit - AI Agent Kit for VLSI Development\n', COLORS.cyan + COLORS.bold);
 
-  if (fs.existsSync(agentDest)) {
-    log('⚠️  .agent directory already exists!', COLORS.yellow);
-    if (!force) {
-      log('   Use --force to overwrite.\n', COLORS.yellow);
-      process.exit(1);
-    }
-    log('   Overwriting existing .agent directory...\n', COLORS.yellow);
-    fs.rmSync(agentDest, { recursive: true, force: true });
-  }
+  // Per-tool dirs are checked at install time, not here.
+  // `.agent/` is no longer written to the user's project — bundled `.agent/`
+  // inside the npm package keeps `vlsi-agkit` CLI working as a fallback.
 
   // ---------- Step 1: tool selection (none selected by default) ----------
   // `--yes` alone (no other flags) → install all tools.
@@ -272,69 +544,38 @@ async function init(targetDir = '.') {
     }
   }
 
-  // ---------- Step 3: copy files ----------
+  // ---------- Step 3: install per tool ----------
+  if (selectedTools.length === 0) {
+    log('\n⚠️  No tools selected. Nothing to write.', COLORS.yellow);
+    log('   The kit is still usable via the `vlsi-agkit` CLI (reads from npm bundle).', COLORS.gray);
+    log('\n📖 Try:', COLORS.cyan);
+    log('   vlsi-agkit list            # browse skills, agents, workflows');
+    log('   vlsi-agkit skill <name>    # read a skill from terminal');
+    log('   vlsi-agkit search <query>  # search the kit\n');
+    return;
+  }
+
   log(`\n${COLORS.bold}Installing...${COLORS.reset}`, COLORS.cyan);
-
-  // Copy .agent/ structure: workflows, rules, _templates always; agents filtered by role
-  log('📁 Copying workflows, rules, templates...');
-  fs.mkdirSync(agentDest, { recursive: true });
-  for (const sub of ['workflows', 'rules', '_templates']) {
-    const s = path.join(agentSrc, sub);
-    if (fs.existsSync(s)) copyDir(s, path.join(agentDest, sub));
-  }
-
-  // Copy only selected role agent files
-  log(`📁 Copying ${selectedRoles.length} role(s)...`);
-  const agentsDest = path.join(agentDest, 'agents');
-  fs.mkdirSync(agentsDest, { recursive: true });
-  for (const role of selectedRoles) {
-    const s = path.join(agentSrc, 'agents', `${role}.md`);
-    if (fs.existsSync(s)) fs.copyFileSync(s, path.join(agentsDest, `${role}.md`));
-  }
-
-  // Copy ARCHITECTURE.md
-  const archSrc = path.join(agentSrc, 'ARCHITECTURE.md');
-  if (fs.existsSync(archSrc)) {
-    fs.copyFileSync(archSrc, path.join(agentDest, 'ARCHITECTURE.md'));
-  }
-
-  // Copy selected skills (derived from roles, or directly via --skills flag)
-  log(`📁 Copying ${selectedSkills.length} skill(s)...`);
-  fs.mkdirSync(path.join(agentDest, 'skills'), { recursive: true });
-  for (const skill of selectedSkills) {
-    const s = path.join(agentSrc, 'skills', skill);
-    if (fs.existsSync(s)) copyDir(s, path.join(agentDest, 'skills', skill));
-  }
-
-  // Write tool configs
+  const summaries = [];
   for (const tool of selectedTools) {
-    for (const t of TOOL_CONFIGS[tool].targets) {
-      const src = path.join(agentSrc, t.src);
-      const dest = path.join(targetDir, t.dest);
-      if (!fs.existsSync(src)) continue;
-      if (fs.existsSync(dest)) {
-        log(`   ${COLORS.gray}skip ${t.dest} (exists)${COLORS.reset}`);
-        continue;
-      }
-      fs.mkdirSync(path.dirname(dest), { recursive: true });
-      fs.copyFileSync(src, dest);
-      log(`📄 ${t.dest}`);
-    }
+    const installer = TOOL_INSTALLERS[tool];
+    if (!installer) continue;
+    const cfg = TOOL_CONFIGS[tool];
+    const dir = path.join(targetDir, cfg.label.split(' ')[0].toLowerCase()); // not used; just log below
+    log(`📦 ${cfg.label} → ${cfg.description}`);
+    const result = installer(agentSrc, targetDir, selectedRoles, selectedSkills);
+    summaries.push({ tool, label: cfg.label, ...result });
   }
 
   // ---------- Done ----------
   log(`\n✅ VLSI Kit initialized!\n`, COLORS.green + COLORS.bold);
   log('📦 Installed:', COLORS.cyan);
   log(`   • ${selectedRoles.length} role(s): ${selectedRoles.join(', ')}`);
-  log(`   • ${selectedSkills.length} skill(s)`);
-  log('   • 10 workflows');
-  if (selectedTools.length) {
-    log('\n📄 Tool configs written:', COLORS.cyan);
-    selectedTools.forEach((t) => log(`   ✓ ${TOOL_CONFIGS[t].label}`));
-  } else {
-    log('\n   (no tool configs — kit usable via `vlsi-agkit` CLI commands)', COLORS.gray);
-  }
-  log('\n📖 Try it:', COLORS.cyan);
+  log(`   • ${selectedSkills.length} skill(s) per tool`);
+  log(`   • ${ALL_WORKFLOWS.length} workflows per tool`);
+  log('\n📄 Tool configs written:', COLORS.cyan);
+  summaries.forEach((s) => log(`   ✓ ${s.label.padEnd(20)} ${COLORS.gray}${s.dir}${COLORS.reset}`));
+  log('\n📖 Try the CLI too (works from any directory):', COLORS.cyan);
   log('   vlsi-agkit list            # browse skills, agents, workflows');
   log('   vlsi-agkit skill <name>    # read a skill from terminal');
   log('   vlsi-agkit search <query>  # search the kit\n');

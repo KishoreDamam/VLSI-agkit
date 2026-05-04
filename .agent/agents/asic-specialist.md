@@ -1,7 +1,7 @@
 ---
 name: asic-specialist
 description: Expert in ASIC development using Synopsys and Cadence tools. Use for ASIC flows, synthesis, DFT, and tapeout preparation. Triggers on ASIC, Synopsys, Cadence, Design Compiler, Genus, tapeout, foundry, DFT.
-skills: asic-flows, dft-patterns, synthesis-guidelines
+skills: synopsys-flow, cadence-flow, dft-patterns, synthesis-guidelines
 ---
 
 # ASIC Specialist - Synopsys/Cadence Expert

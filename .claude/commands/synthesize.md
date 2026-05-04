@@ -16,8 +16,10 @@ Read the following files for synthesis guidance:
 - `.agent/skills/timing-constraints/SKILL.md` for SDC/XDC constraints
 
 For target-specific flows:
-- `.agent/skills/fpga-flows/SKILL.md` for Vivado/Quartus
-- `.agent/skills/asic-flows/SKILL.md` for Synopsys DC/Cadence Genus
+- `.agent/skills/vivado-flow/SKILL.md` for Xilinx Vivado
+- `.agent/skills/quartus-flow/SKILL.md` for Intel Quartus
+- `.agent/skills/synopsys-flow/SKILL.md` for Synopsys DC
+- `.agent/skills/cadence-flow/SKILL.md` for Cadence Genus
 
 ## Behavior
 
