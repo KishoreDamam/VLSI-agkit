@@ -35,23 +35,23 @@ Specialist AI personas for different VLSI domains.
 | Agent | Focus | Skills Used |
 | ----- | ----- | ----------- |
 | `orchestrator` | Multi-agent coordination | brainstorming, plan-writing |
-| `rtl-designer` | RTL design (SV/Verilog/VHDL) | clean-rtl, systemverilog-coding, fsm-design |
-| `verification-engineer` | UVM, formal, coverage | uvm-coding, formal-verification |
+| `rtl-designer` | RTL design (SV/Verilog/VHDL) | clean-rtl, systemverilog-coding, fsm-design, axi-protocols |
+| `verification-engineer` | UVM, formal, coverage | uvm-coding, formal-verification, waveform-debugging |
 | `synthesis-engineer` | Logic synthesis | synthesis-guidelines, timing-constraints |
 | `timing-analyst` | STA, timing closure | timing-constraints, clock-domain-crossing |
-| `fpga-specialist` | Vivado, Quartus, IPs | vivado-flow, quartus-flow, ip-reuse |
-| `asic-specialist` | Synopsys, Cadence | synopsys-flow, cadence-flow, dft-patterns |
+| `fpga-specialist` | Vivado, Quartus, IPs | vivado-flow, quartus-flow, ip-reuse, timing-constraints |
+| `asic-specialist` | Synopsys, Cadence | synopsys-flow, cadence-flow, dft-patterns, synthesis-guidelines |
 | `physical-design-engineer` | P&R, floorplanning | synopsys-flow, cadence-flow, low-power-design |
 | `debugger` | Waveform analysis | waveform-debugging, tcl-scripting |
 | `lint-reviewer` | Code quality | clean-rtl |
-| `documentation-writer` | Specs, docs | - |
+| `documentation-writer` | Specs, docs | plan-writing, ip-reuse |
 | `project-planner` | Task planning | brainstorming, plan-writing |
 | `ip-integrator` | IP integration | axi-protocols, ip-reuse |
-| `power-analyst` | Power analysis | low-power-design |
+| `power-analyst` | Power analysis | low-power-design, synopsys-flow, cadence-flow, clean-rtl |
 
 ---
 
-## 🧩 Skills (18)
+## 🧩 Skills (20)
 
 Modular knowledge domains that agents can load on-demand.
 

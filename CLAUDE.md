@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 When editing this repo you are usually doing one of three things:
 1. **Authoring or revising agent/skill/workflow markdown** under `.agent/`.
-2. **Changing CLI behavior** in `bin/cli.js` (init flow, list/search/skill/agent/workflow/verify subcommands, frontmatter parser, tool-config writers).
+2. **Changing CLI behavior** in `bin/cli.js` (init flow, list/search/skill/agent/workflow/verify subcommands, frontmatter parser, per-tool generators).
 3. **Adjusting verification plumbing** (`Makefile`, `tools.mk`, per-skill `examples/Makefile`).
 
 ## Commands
@@ -48,9 +48,9 @@ There is no test suite (`npm test` is a stub). `make verify` is the closest thin
 
 Everything authoritative lives here. `init` reads from this tree and **generates** per-tool installs at the user's project. The folder is also bundled inside the published npm package so `vlsi-agkit list/skill/...` work via fallback even when no local install exists.
 
-- `.agent/agents/*.md` — 14 specialist personas. Frontmatter `skills:` lists which skills the agent pulls in. The `init` flow expands a chosen role into its skill set via this field.
-- `.agent/skills/<name>/SKILL.md` — index card (≤300 lines), with optional `references/` (deep-dive markdown) and `examples/` (compilable SV + Makefile). Skill dirs prefixed with `_` (`_templates`, `_evals`) are reserved and ignored by both `make` and the CLI.
-- `.agent/workflows/*.md` — slash-command procedures (`/design`, `/verify`, `/timing`, …). The Claude Code generator copies these to `.claude/commands/`; Copilot to `.github/prompts/`; etc.
+- `.agent/agents/*.md` — 14 specialist personas. Frontmatter `skills:` lists which skills the agent pulls in. The `init` flow expands a chosen role into its skill set via this field. Production-tier agents follow the template: Core Philosophy → Your Mindset → domain Flow → templates → checklists.
+- `.agent/skills/<name>/SKILL.md` — 20 index cards (≤300 lines each), with optional `references/` (deep-dive markdown) and `examples/` (compilable SV + Makefile). Six are "Wave 1" production-grade with full references + examples; the other 14 are SKILL.md only. Skill dirs prefixed with `_` (`_templates`, `_evals`) are reserved and ignored by both `make` and the CLI. All skills follow the structural template: When-to-use (with Not-for) → Quick reference / Patterns → Anti-patterns → Validation checklist.
+- `.agent/workflows/*.md` — 10 slash-command procedures (`/design`, `/verify`, `/timing`, …). Each has a `## Resources` section naming the lead agent, supporting agents, and required/conditional skills, so the workflow file is the entry point that composes the rest of the kit. The Claude Code generator copies these to `.claude/commands/`; Copilot to `.github/prompts/`; etc.
 
 ### Per-tool generators (`bin/cli.js`)
 
