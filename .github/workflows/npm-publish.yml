@@ -9,7 +9,7 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write   # required by softprops/action-gh-release to create GitHub Release
       id-token: write   # required for npm provenance attestations
     steps:
       - name: Checkout
