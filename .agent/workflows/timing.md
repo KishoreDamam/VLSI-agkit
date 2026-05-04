@@ -12,6 +12,13 @@ $ARGUMENTS
 
 Analyze and close timing issues.
 
+## Resources
+
+- **Lead agent:** `timing-analyst`
+- **Supporting agents:** `synthesis-engineer` (when fixes need re-synth), `rtl-designer` (when RTL must change), `fpga-specialist` or `asic-specialist` for tool-specific STA
+- **Required skills:** `timing-constraints` (SDC/XDC authoring, multicycle/false-path), `synthesis-guidelines` (retiming, pipelining)
+- **Conditional skills:** `clock-domain-crossing` (CDC paths and `set_max_delay`), `tcl-scripting` (timing-report parsing), `vivado-flow` / `synopsys-flow` / `cadence-flow` for tool-specific commands
+
 ---
 
 ## Behavior

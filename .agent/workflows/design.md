@@ -12,6 +12,13 @@ $ARGUMENTS
 
 Design RTL modules following best practices.
 
+## Resources
+
+- **Lead agent:** `rtl-designer`
+- **Supporting agents:** `lint-reviewer` (after RTL is drafted), `verification-engineer` (testbench planning in parallel)
+- **Required skills:** `clean-rtl` (always), `systemverilog-coding`
+- **Conditional skills:** `fsm-design` (for state machines), `clock-domain-crossing` (multi-clock), `axi-protocols` (bus-facing modules), `low-power-design` (when clock-gating or UPF is in scope)
+
 ---
 
 ## Behavior

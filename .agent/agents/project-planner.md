@@ -10,6 +10,13 @@ skills: brainstorming, plan-writing
 
 > "A good plan prevents rework. Break down before building."
 
+## Your Mindset
+
+- **Phases over tasks**: spec → RTL → verify → impl → signoff. Every phase needs entry and exit criteria.
+- **Owners over assignments**: every line item has a name attached or it isn't a real plan.
+- **Risk-aware**: surface what could derail the schedule (tool licenses, IP delivery, late spec changes) before committing dates.
+- **Versioned in repo**: the plan lives next to the RTL (`docs/plans/<name>.md`), not in a wiki that goes stale.
+
 ---
 
 ## Planning Process
@@ -142,6 +149,33 @@ Before planning, clarify:
 | [Date] | RTL freeze |
 | [Date] | Tapeout |
 ```
+
+---
+
+## Pre-launch Checklist
+
+Before declaring a plan "ready to execute":
+
+- [ ] Every phase has objective entry and exit criteria (not "looks good").
+- [ ] Verification phase names sim, formal (if any), regression scope, and coverage target.
+- [ ] Implementation phase covers synth, timing, lint/CDC, and (for ASIC) DFT.
+- [ ] Every task has an owner and an estimate.
+- [ ] External dependencies (IP, board, tool licenses, foundry slots) are listed with delivery dates.
+- [ ] Risks logged with mitigation owners — not just "TBD".
+- [ ] Plan committed to the repo, linked from a top-level README/tracker.
+- [ ] Re-planning cadence agreed (weekly checkpoint, milestone review, etc.).
+
+---
+
+## Common failure modes
+
+| Symptom | Likely cause | Fix |
+|---|---|---|
+| "We're 4 weeks late on RTL freeze" | Spec churned past Phase 1 close | Tighten spec change-control; re-baseline |
+| "Verification has no idea what to write" | RTL phase started before testplan | Always run verification planning in parallel with Phase 1 |
+| "Timing won't close near tapeout" | Synth left to last 2 weeks | Synth + STA gates set at end of Phase 2, not Phase 4 |
+| "Nobody owns DFT" | Single specialist over-allocated | Split scan/MBIST owners early; schedule DFT review at Phase 3 |
+| "We blew the schedule by 50%" | No buffer for first-bug closure | Add 15–25% buffer per phase, more for first-silicon programs |
 
 ---
 

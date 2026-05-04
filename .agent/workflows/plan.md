@@ -12,6 +12,12 @@ $ARGUMENTS
 
 Create a detailed task breakdown before implementation.
 
+## Resources
+
+- **Lead agent:** `project-planner`
+- **Supporting agents:** `orchestrator` (when planning crosses multiple specialist domains), `documentation-writer` (when the plan ships as a deliverable doc)
+- **Required skills:** `plan-writing` (phase decomposition, deliverables, estimation), `brainstorming` (when requirements are vague going in)
+
 ---
 
 ## Behavior

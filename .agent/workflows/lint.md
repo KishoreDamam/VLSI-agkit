@@ -12,6 +12,13 @@ $ARGUMENTS
 
 Check RTL code quality and catch common issues.
 
+## Resources
+
+- **Lead agent:** `lint-reviewer`
+- **Supporting agents:** `rtl-designer` (when fixes need code changes), `synthesis-engineer` (synth-side warnings)
+- **Required skills:** `clean-rtl` (RTL hygiene rules), `systemverilog-coding` (logic/reg/wire, always_comb)
+- **Conditional skills:** `synopsys-flow` (SpyGlass), `vivado-flow` (Vivado lint), `cadence-flow` (Cadence equivalents), `clock-domain-crossing` (CDC lint waivers)
+
 ---
 
 ## Behavior

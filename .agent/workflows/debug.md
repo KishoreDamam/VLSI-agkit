@@ -12,6 +12,13 @@ $ARGUMENTS
 
 Systematic investigation of VLSI bugs.
 
+## Resources
+
+- **Lead agent:** `debugger`
+- **Supporting agents:** `verification-engineer` (testbench fixes), `rtl-designer` (RTL fixes), `timing-analyst` (when failure has timing flavor), `ip-integrator` (IP-boundary issues)
+- **Required skills:** `waveform-debugging` (VCD/FSDB navigation, X-tracing, binary search)
+- **Conditional skills:** `clock-domain-crossing` (CDC-related corruption), `formal-verification` (assertion coverage gaps), `axi-protocols` (handshake hangs), `fsm-design` (illegal state debug), `tcl-scripting` (Tcl-driven debug automation)
+
 ---
 
 ## Behavior

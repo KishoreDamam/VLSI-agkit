@@ -12,6 +12,18 @@ $ARGUMENTS
 
 Synthesize RTL to gates with timing closure.
 
+## Resources
+
+- **Lead agent:** `synthesis-engineer`
+- **Supporting agents:** `timing-analyst` (when timing fails), `fpga-specialist` or `asic-specialist` depending on target
+- **Required skills:** `synthesis-guidelines` (RTL coding for synth), `timing-constraints` (SDC/XDC authoring)
+- **Tool flow skills (pick by target):**
+  - Xilinx → `vivado-flow`
+  - Intel/Altera → `quartus-flow`
+  - Synopsys (Design Compiler) → `synopsys-flow`
+  - Cadence (Genus) → `cadence-flow`
+- **Conditional skills:** `tcl-scripting` (custom build automation), `low-power-design` (clock-gating, multi-Vt), `dft-patterns` (scan insertion)
+
 ---
 
 ## Behavior

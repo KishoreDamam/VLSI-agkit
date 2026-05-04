@@ -12,6 +12,13 @@ $ARGUMENTS
 
 Review RTL code for quality and correctness.
 
+## Resources
+
+- **Lead agent:** `lint-reviewer`
+- **Supporting agents:** `rtl-designer` (architectural feedback), `verification-engineer` (testability and coverage gaps), `timing-analyst` (CDC and timing-flavored review)
+- **Required skills:** `clean-rtl` (hygiene checklist), `systemverilog-coding` (language-level review)
+- **Conditional skills:** `fsm-design` (state machines under review), `clock-domain-crossing` (multi-clock RTL), `axi-protocols` (bus-facing modules), `synthesis-guidelines` (synth-readiness)
+
 ---
 
 ## Behavior

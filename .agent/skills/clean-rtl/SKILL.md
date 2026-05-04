@@ -5,7 +5,19 @@ description: Use when writing or reviewing any synthesizable Verilog/SystemVeril
 
 # Clean RTL - VLSI Coding Standards
 
-> **CRITICAL SKILL** - Write RTL that is correct, readable, and synthesizable.
+> Write RTL that is correct, readable, and synthesizable. The baseline rules every other skill assumes.
+
+---
+
+## When to use
+
+- Writing or reviewing any synthesizable Verilog/SystemVerilog module.
+- Setting up the skeleton of a new module (port order, reset style, naming).
+- Reviewing a PR and need a checklist of "RTL hygiene" items.
+- Lint reports flag latches, naming inconsistencies, or `reg`/`wire` confusion.
+- Onboarding someone new to the codebase — point them at this skill first.
+
+**Not for:** module-level architecture decisions (use `brainstorming`); FSM-specific patterns (use `fsm-design`); SystemVerilog feature deep-dives like interfaces/structs (use `systemverilog-coding`); synthesis directives or QoR (use `synthesis-guidelines`).
 
 ---
 
@@ -187,7 +199,20 @@ end
 
 ---
 
-## Anti-Patterns
+## Anti-patterns (do NOT do this)
+
+1. **`always @(*)` for combinational logic.** Use `always_comb`. The simulator can detect missing assignments and raise warnings; `@(*)` cannot, so latches sneak through.
+2. **Blocking assignments (`=`) inside `always_ff`.** Causes simulation/synthesis mismatches because non-blocking is what hardware actually does. Always `<=` in sequential.
+3. **Non-blocking (`<=`) inside `always_comb`.** Inverse mistake — `always_comb` models combinational logic which has no concept of "next-cycle"; use `=`.
+4. **`reg` keyword in new SystemVerilog code.** Use `logic`. `reg` survives only for legacy compatibility and obscures the actual storage element being inferred.
+5. **Magic numbers in widths or comparisons.** Use named `parameter`/`localparam` so the intent is greppable and the value can be overridden.
+6. **Implicit net declarations.** Always use `` `default_nettype none `` at the top of each file or rely on lint to catch undeclared identifiers — typos otherwise infer 1-bit wires.
+7. **Mixing reset polarities or styles within one module.** Pick async/sync and active-high/low project-wide; mixing creates CDC-style timing issues on the reset tree.
+8. **Deep `if/else` chains for state machines.** Use a `case` block (and `unique`/`priority` where appropriate) — synthesis recognizes the pattern and lint can prove full coverage.
+
+---
+
+## Anti-pattern quick reference
 
 | ❌ Don't | ✅ Do |
 |----------|-------|
@@ -216,11 +241,23 @@ end
 
 ---
 
-## Self-Check Before Commit
+## Validation checklist (pre-commit)
 
-- [ ] All signals reset
-- [ ] No latches (check synthesis)
-- [ ] Lint clean
-- [ ] Naming consistent
-- [ ] Assertions added
-- [ ] Comments on complex logic
+- [ ] Every register reachable by reset is initialized in the reset branch.
+- [ ] No inferred latches: synthesis report shows zero `LATCH` cells; lint shows no `INFERRED_LATCH`.
+- [ ] Lint clean against project ruleset (no new warnings or waivers without justification).
+- [ ] Naming follows the conventions table above (ports, params, instances, generates).
+- [ ] No `reg`/`always @(*)` in new code; `logic` + `always_comb` / `always_ff` only.
+- [ ] No magic numbers in widths or comparisons — use `parameter`/`localparam`.
+- [ ] `` `default_nettype none `` at file top, or equivalent lint rule enabled.
+- [ ] Reset polarity and style consistent with project convention (async vs sync, active-low standard).
+- [ ] Inline assertions (`assert`/`$isunknown`) added for protocol-level invariants.
+- [ ] Comments explain *why* on non-obvious decisions; module header has Description block.
+
+---
+
+## See also
+
+- `systemverilog-coding` — `logic` vs `reg` vs `wire`, `always_comb` vs `@*`, struct drivers, generate-for.
+- `fsm-design` — state-machine patterns and latch-free `case` discipline.
+- `synthesis-guidelines` — synthesis-aware RTL beyond the basics (attributes, retiming, GLS readiness).

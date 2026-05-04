@@ -12,6 +12,13 @@ $ARGUMENTS
 
 Integrate IP cores and connect bus interfaces.
 
+## Resources
+
+- **Lead agent:** `ip-integrator`
+- **Supporting agents:** `rtl-designer` (wrapper authoring), `timing-analyst` (cross-IP timing budgets), `verification-engineer` (integration testbenches)
+- **Required skills:** `axi-protocols` (AMBA bus integration), `ip-reuse` (packaging conventions, parameter discipline)
+- **Conditional skills:** `clock-domain-crossing` (cross-domain IP boundaries), `vivado-flow` / `quartus-flow` (vendor IP catalogs), `clean-rtl` (wrapper coding standards)
+
 ---
 
 ## Behavior

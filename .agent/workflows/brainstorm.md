@@ -12,6 +12,13 @@ $ARGUMENTS
 
 Explore requirements and architecture before implementation.
 
+## Resources
+
+- **Lead agent:** `orchestrator` (routes to specialists for trade-off questions), `project-planner` (when output feeds a plan)
+- **Supporting agents:** any specialist relevant to the domain (`rtl-designer`, `verification-engineer`, `timing-analyst`, `fpga-specialist`, `asic-specialist`, etc.)
+- **Required skills:** `brainstorming` (Socratic question banks for VLSI: scope, interface, target, performance, constraints, reuse, verification)
+- **Conditional skills:** `axi-protocols` / `clock-domain-crossing` / `low-power-design` etc. when domain-specific deep dives surface during exploration
+
 ---
 
 ## Behavior

@@ -12,6 +12,13 @@ $ARGUMENTS
 
 Verify RTL designs with testbenches and coverage.
 
+## Resources
+
+- **Lead agent:** `verification-engineer`
+- **Supporting agents:** `debugger` (when failures emerge), `rtl-designer` (testbench-driven RTL fixes)
+- **Required skills:** `uvm-coding` (for full UVM TBs), `formal-verification` (assertions/properties)
+- **Conditional skills:** `axi-protocols` (protocol-compliance suites), `clock-domain-crossing` (multi-clock TBs), `waveform-debugging` (when failures need root-causing)
+
 ---
 
 ## Behavior
