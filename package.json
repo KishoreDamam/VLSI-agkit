@@ -34,7 +34,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kishore-damam/vlsi-kit.git"
+    "url": "git+https://github.com/KishoreDamam/VLSI-agkit.git"
   },
   "engines": {
     "node": ">=14.0.0"
