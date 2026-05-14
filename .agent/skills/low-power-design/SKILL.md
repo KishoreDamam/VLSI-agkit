@@ -199,6 +199,16 @@ report_power -hierarchy > power.rpt
 
 ---
 
+## See also
+
+- `references/clock-and-input-control.md` — FPGA clock-control primitives (BUFGMUX / BUFGCE / clock enable), why direct logic gating breaks, input-buffer transition power, terminating unused inputs.
+- `references/voltage-dual-edge-termination.md` — voltage scaling math, dual-edge / DDR registers, series vs parallel termination, decoupling cap strategy.
+- `clean-rtl/references/fpga-reset-strategy.md` — reset design under clock-gating / DVFS.
+- `synthesis-guidelines/references/retiming-and-register-balancing.md` — clock-enable interaction with retiming.
+- `sta` skill `references/mmmc-corners.md` — sign-off at scaled voltages.
+
+---
+
 ## Anti-patterns (do NOT do this)
 
 1. **Hand-instantiated clock gates without ICG cells.** Hand-rolled `assign gclk = clk & en` glitches; use the library ICG (e.g. `CKLNQD`) or a `clock_gating_check`-aware synthesis directive.

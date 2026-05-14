@@ -132,19 +132,20 @@ Skills are tiered: each has a thin `SKILL.md` index card (≤300 lines) plus dee
 
 ### Production-grade (Wave 1) ⭐
 
-These nine skills ship with full reference docs, compiled examples, validation gates, and citations:
+These ten skills ship with full reference docs, compiled examples, validation gates, and citations:
 
 | Skill | Type | What it covers |
 |---|---|---|
-| `clean-rtl` | coding | Simulation races (Cummings' 8 NBA rules), sim/synth mismatch (8 causes), latch inference & `unique`/`priority`, sync-reset coding idiom |
+| `clean-rtl` | coding | Simulation races (Cummings' 8 NBA rules), sim/synth mismatch (8 causes), latch inference & `unique`/`priority`, sync-reset coding idiom, **FPGA reset strategy (async-assert / sync-deassert)** |
 | `fsm-design` | coding | One/two/three-process FSMs, encoding tradeoffs, timeout counters, SVA assertions |
 | `clock-domain-crossing` | flow | 2-FF synchronizers, async FIFO with Gray pointers, handshake CDC, false-path vs max-delay |
 | `systemverilog-coding` | coding | `logic`/`reg`/`wire`, interfaces+modports, generate, struct drivers, `always_comb`/`_ff` |
 | `sta` | flow | **Master-level STA** — slack equations, CRPR, OCV/AOCV/POCV, MMMC corners, SI, useful skew, latch borrow, report_timing deep-dive |
 | `timing-constraints` | flow | SDC/XDC: `create_clock`, I/O delays, multicycle paths, **8-category false-paths catalog**, clock characteristics (latency / propagation / sense / ideal), port electrical (`set_driving_cell` / load / fanout), modal analysis (`set_case_analysis`), combinational/feedthrough paths, Xilinx XDC |
 | `dft-patterns` | flow | Scan chains (controllability/observability), capture/shift, fault models (stuck-at, transition, cell-aware), ATPG coverage targets |
+| `low-power-design` | flow | UPF power domains, isolation/retention, **FPGA clock-control primitives (BUFGCE / BUFGMUX vs logic gating), voltage scaling / DVFS, dual-edge registers, termination & decoupling** |
 | `uvm-coding` | coding | UVM 1.2 components, sequences, TLM analysis ports, dual-FIFO scoreboards, RAL |
-| `synthesis-guidelines` | flow | Synthesis-friendly RTL, attributes, retiming, GLS readiness, X-propagation, **congestion-aware RTL** |
+| `synthesis-guidelines` | flow | Synthesis-friendly RTL, attributes, **retiming / register balancing (with reset-uniformity and synchronizer traps), FSM compilation & encoding**, GLS readiness, X-propagation, congestion-aware RTL |
 
 ### Other skills
 
@@ -157,7 +158,6 @@ These nine skills ship with full reference docs, compiled examples, validation g
 | `synopsys-flow` | DC, VCS, SpyGlass, DFT Compiler, VC Formal |
 | `cadence-flow` | Genus, Xcelium, JasperGold |
 | `axi-protocols` | AXI4, AXI-Lite, AXI-Stream |
-| `low-power-design` | UPF, power gating, clock gating |
 | `ip-reuse` | IP packaging, portability |
 | `tcl-scripting` | Tcl for EDA tools |
 | `brainstorming` | Socratic questioning, architecture exploration |

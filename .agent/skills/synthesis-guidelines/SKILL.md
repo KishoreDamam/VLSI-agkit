@@ -221,5 +221,7 @@ digraph fix_timing {
 - `references/timing-optimization.md` — pipelining, operand pre-registration, retiming, adder trees, DSP cascading
 - `references/gate-level-sim.md` — GLS hazards, X-propagation modes, reset coverage, SDF annotation
 - `references/congestion-aware-rtl.md` — RTL patterns that drive routing congestion (wide muxes, fanout, fanin cones); recognise and pipeline before placement
+- `references/retiming-and-register-balancing.md` — pipelining vs retiming vs register balancing, trap patterns (mixed resets, synchronizers), speed-vs-area curve
+- `references/fsm-compilation-and-encoding.md` — automatic FSM recognition, one-hot vs binary vs gray encoding, safe-state recovery, async-output rule
 - `examples/pipelined_mult_add.sv` — before/after pipelining example with synthesis attributes
 - `timing-constraints` skill — SDC authoring, clock groups, multicycle paths
