@@ -262,6 +262,7 @@ end
 - `references/sim-synth-mismatch.md` — eight canonical causes of RTL-vs-netlist divergence.
 - `references/latch-inference.md` — when latches are inferred, when intentional, `unique`/`priority` traps.
 - `references/synchronous-reset.md` — coding idiom that lets synthesis map reset to the flop's sync-clear pin.
+- `references/fpga-reset-strategy.md` — async-assert / sync-deassert pattern, per-domain reset synchronizers, internally-generated resets.
 - `systemverilog-coding` — `logic` vs `reg` vs `wire`, `always_comb` vs `@*`, struct drivers, generate-for.
 - `fsm-design` — state-machine patterns and latch-free `case` discipline.
 - `synthesis-guidelines` — synthesis-aware RTL beyond the basics (attributes, retiming, GLS readiness).
