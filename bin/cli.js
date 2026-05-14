@@ -93,7 +93,7 @@ const TOOL_CONFIGS = {
   },
   copilot: {
     label: 'GitHub Copilot',
-    description: 'writes .github/{copilot-instructions.md,instructions/,prompts/}',
+    description: 'writes .github/{copilot-instructions.md,skills/<name>/SKILL.md,prompts/}',
   },
   gemini: {
     label: 'Gemini CLI',
@@ -272,19 +272,21 @@ function installClaude(agentSrc, targetDir, roles, skills) {
   return { dir: '.claude/', skills: count };
 }
 
-// ---- GitHub Copilot: .github/{copilot-instructions.md,instructions/,prompts/} ----
+// ---- GitHub Copilot: .github/{skills,prompts}/ (cloud-agent skills spec) ----
+// Conforms to https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills
 function installCopilot(agentSrc, targetDir, roles, skills) {
   const base = path.join(targetDir, '.github');
-  // Top-level instructions: routing index
+
+  // Top-level routing index (informational; not a skill itself)
   const idx = [
     '# VLSI Kit — Copilot routing',
     '',
-    'This project uses the VLSI Agent Kit. Skill instructions are in `.github/instructions/`',
-    'and apply to all files. Slash-style prompts are in `.github/prompts/`.',
+    'This project uses the VLSI Agent Kit. Cloud-agent skills live in `.github/skills/<name>/SKILL.md`.',
+    'Slash-style workflow prompts are in `.github/prompts/`.',
     '',
-    '## Roles installed',
+    '## Roles installed (as skills)',
     '',
-    ...roles.map((r) => `- \`${r}\``),
+    ...roles.map((r) => `- \`agent-${r}\``),
     '',
     '## Skills installed',
     '',
@@ -297,24 +299,27 @@ function installCopilot(agentSrc, targetDir, roles, skills) {
   ].join('\n');
   writeFile(path.join(base, 'copilot-instructions.md'), idx);
 
-  // Per-skill instruction files (auto-applied via applyTo)
+  // Per-skill: .github/skills/<name>/SKILL.md (+ references/, examples/)
   for (const skill of skills) {
     const s = loadSkill(agentSrc, skill);
     if (!s) continue;
-    const out = fmYaml({ applyTo: '**', description: s.fm.description || '' }) + s.body;
-    writeFile(path.join(base, 'instructions', `${s.name}.instructions.md`), out);
-    // Skip aux files for Copilot — only top-level skill instructions are auto-loaded
+    const out = fmYaml({ name: s.fm.name || s.name, description: s.fm.description || '' }) + s.body;
+    writeFile(path.join(base, 'skills', s.name, 'SKILL.md'), out);
+    for (const a of s.aux) {
+      writeFile(path.join(base, 'skills', s.name, a.relPath), a.content);
+    }
   }
 
-  // Per-role instruction files
+  // Per-role: also emitted as skills (cloud-agent spec has no separate "agent" concept)
   for (const role of roles) {
     const a = loadAgent(agentSrc, role);
     if (!a) continue;
-    const out = fmYaml({ applyTo: '**', description: a.fm.description || '' }) + a.body;
-    writeFile(path.join(base, 'instructions', `agent-${a.name}.instructions.md`), out);
+    const skillName = `agent-${a.name}`;
+    const out = fmYaml({ name: skillName, description: a.fm.description || '' }) + a.body;
+    writeFile(path.join(base, 'skills', skillName, 'SKILL.md'), out);
   }
 
-  // Per-workflow prompt files (invoked manually)
+  // Per-workflow prompt files (invoked manually via /command)
   for (const wf of ALL_WORKFLOWS) {
     const w = loadWorkflow(agentSrc, wf);
     if (!w) continue;

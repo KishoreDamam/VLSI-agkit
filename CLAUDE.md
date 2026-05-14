@@ -57,8 +57,8 @@ Everything authoritative lives here. `init` reads from this tree and **generates
 `init` runs one **generator function** per selected tool (`installClaude`, `installCopilot`, `installGemini`, `installCursor`, `installAntigravity`). Each generator:
 
 1. Reads source SKILL.md / agent / workflow markdown from `.agent/` in the npm package.
-2. Splits the YAML frontmatter via `splitFrontmatter()` and rewrites it via `fmYaml()` to match the target tool's expectations (e.g. Copilot wants `applyTo: "**"`, Cursor wants `description:` + `alwaysApply: false`).
-3. Writes the result to the tool's native directory (`.claude/skills/`, `.github/instructions/`, `.gemini/skills/`, `.cursor/rules/`, `.agents/skills/`).
+2. Splits the YAML frontmatter via `splitFrontmatter()` and rewrites it via `fmYaml()` to match the target tool's expectations (Claude Code and Copilot cloud-agent skills both want `name:` + `description:`; Cursor wants `description:` + `alwaysApply: false`).
+3. Writes the result to the tool's native directory (`.claude/skills/<name>/SKILL.md`, `.github/skills/<name>/SKILL.md` per the [Copilot cloud-agent skills spec](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills), `.gemini/skills/`, `.cursor/rules/`, `.agents/skills/`).
 
 Output layout per tool: see README "Supported AI Tools" table. Multiple tools = duplicated content (deliberate — each tool's install is self-contained, no shared `.agent/` indirection).
 
@@ -66,7 +66,7 @@ Output layout per tool: see README "Supported AI Tools" table. Multiple tools = 
 
 - `findAgentRoot()` resolves `.agent/` from cwd first, then falls back to the bundled copy inside the npm package — this is what makes `npx vlsi-agkit list` work from any directory, including projects where `init` was never run.
 - `readFrontmatter()` and `splitFrontmatter()` are hand-rolled YAML parsers. They must handle CRLF (Windows). Don't reach for a YAML lib; keep them tolerant of `\r\n` and quoted values.
-- `fmYaml()` quotes any value containing YAML-significant chars (`* & ! | > % @ : # ` " '`) — the most common case is glob patterns like `applyTo: "**"`.
+- `fmYaml()` quotes any value containing YAML-significant chars (`* & ! | > % @ : # ` " '`) — handles glob patterns and descriptions with colons.
 - `init` is interactive (arrow-key checkbox lists via `prompts`), with **nothing pre-selected by default**. Roles map → skills via agent frontmatter; tool selection drives which generators run. Flags `--tools`, `--roles`, `--skills`, `--yes` make it scriptable.
 - Subcommands: `init | list | skill | agent | workflow | search | verify | version | help`.
 
