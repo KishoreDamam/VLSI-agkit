@@ -200,6 +200,17 @@ digraph flow {
   N=3 concrete example with hold compensation.
 - `references/false-paths-catalog.md` — eight-category catalog of when to use
   `set_false_path` vs `set_clock_groups` vs `set_case_analysis`, with risk notes.
+- `references/clock-characteristics.md` — `set_clock_latency` (source vs network),
+  `set_propagated_clock`, `set_clock_transition`, `set_clock_sense`,
+  `set_ideal_network`; pre-CTS vs post-CTS rules.
+- `references/port-electrical-constraints.md` — `set_drive`, `set_driving_cell`
+  (all 11 options), `set_input_transition`, `set_load`, `set_fanout_load`,
+  `set_port_fanout_number`.
+- `references/modal-constraints.md` — `set_case_analysis`, multi-mode SDC,
+  single-mode vs merged-mode strategy, propagation through logic.
+- `references/combinational-paths.md` — feedthroughs across blocks,
+  `set_max_delay` vs `set_input/output_delay`, point-to-point exceptions,
+  `set_disable_timing`.
 - `references/xilinx-xdc.md` — Xilinx-specific: `PACKAGE_PIN`, `IOSTANDARD`,
   `CLOCK_DEDICATED_ROUTE`, `create_pblock`, `PROHIBIT`, `CLOCK_BUFFER_TYPE`.
 - `examples/constraints.xdc` — annotated XDC for a small design with two clocks,
