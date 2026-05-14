@@ -123,7 +123,7 @@ works because it falls back to the `.agent/` bundled inside the npm package.
 | Component     | Count | Description                                                        |
 | ------------- | ----- | ------------------------------------------------------------------ |
 | **Agents**    | 14    | Specialist AI personas (RTL, Verification, Synthesis, Timing, etc.) |
-| **Skills**    | 20    | Domain-specific knowledge modules                                  |
+| **Skills**    | 21    | Domain-specific knowledge modules (11 production-grade with deep refs + runnable examples) |
 | **Workflows** | 10    | Slash command procedures                                           |
 
 ## Skills
@@ -132,20 +132,23 @@ Skills are tiered: each has a thin `SKILL.md` index card (≤300 lines) plus dee
 
 ### Production-grade (Wave 1) ⭐
 
-These ten skills ship with full reference docs, compiled examples, validation gates, and citations:
+These eleven skills ship with full reference docs, compiled examples, validation gates, and citations:
 
 | Skill | Type | What it covers |
 |---|---|---|
-| `clean-rtl` | coding | Simulation races (Cummings' 8 NBA rules), sim/synth mismatch (8 causes), latch inference & `unique`/`priority`, sync-reset coding idiom, **FPGA reset strategy (async-assert / sync-deassert)** |
+| `clean-rtl` | coding | Simulation races (Cummings' 8 NBA rules), sim/synth mismatch (8 causes), latch inference & `unique`/`priority`, sync-reset coding idiom, FPGA reset strategy (async-assert / sync-deassert) |
 | `fsm-design` | coding | One/two/three-process FSMs, encoding tradeoffs, timeout counters, SVA assertions |
 | `clock-domain-crossing` | flow | 2-FF synchronizers, async FIFO with Gray pointers, handshake CDC, false-path vs max-delay |
 | `systemverilog-coding` | coding | `logic`/`reg`/`wire`, interfaces+modports, generate, struct drivers, `always_comb`/`_ff` |
-| `sta` | flow | **Master-level STA** — slack equations, CRPR, OCV/AOCV/POCV, MMMC corners, SI, useful skew, latch borrow, report_timing deep-dive |
-| `timing-constraints` | flow | SDC/XDC: `create_clock`, I/O delays, multicycle paths, **8-category false-paths catalog**, clock characteristics (latency / propagation / sense / ideal), port electrical (`set_driving_cell` / load / fanout), modal analysis (`set_case_analysis`), combinational/feedthrough paths, Xilinx XDC |
-| `dft-patterns` | flow | Scan chains (controllability/observability), capture/shift, fault models (stuck-at, transition, cell-aware), ATPG coverage targets |
-| `low-power-design` | flow | UPF power domains, isolation/retention, **FPGA clock-control primitives (BUFGCE / BUFGMUX vs logic gating), voltage scaling / DVFS, dual-edge registers, termination & decoupling** |
+| `sta` | flow | **Master-level STA** — slack equations, CRPR, OCV/AOCV/POCV, MMMC corners, SI, useful skew, latch borrow, `report_timing` deep-dive |
+| `timing-constraints` | flow | SDC/XDC — `create_clock`, I/O delays, multicycle paths, 8-category false-paths catalog, clock characteristics (latency / propagation / sense / ideal), port electrical (`set_driving_cell` / load / fanout), modal analysis (`set_case_analysis`), combinational/feedthrough paths, Xilinx XDC |
+| `dft-patterns` | flow | Scan chains (controllability/observability), capture/shift, fault models (stuck-at / transition / cell-aware), ATPG coverage targets |
+| `low-power-design` | flow | UPF power domains, isolation/retention, FPGA clock-control primitives (BUFGCE / BUFGMUX vs logic gating), voltage scaling / DVFS, dual-edge registers, terminations & decoupling |
 | `uvm-coding` | coding | UVM 1.2 components, sequences, TLM analysis ports, dual-FIFO scoreboards, RAL |
-| `synthesis-guidelines` | flow | Synthesis-friendly RTL, attributes, **retiming / register balancing (with reset-uniformity and synchronizer traps), FSM compilation & encoding**, GLS readiness, X-propagation, congestion-aware RTL |
+| `synthesis-guidelines` | flow | Synthesis-friendly RTL, attributes, retiming / register balancing (with reset-uniformity and synchronizer traps), FSM compilation & encoding, GLS readiness, X-propagation, congestion-aware RTL |
+| `axi-protocols` | coding | AXI4 / AXI4-Lite / AXI4-Stream handshake rules + arbiter primitives (fixed-priority / round-robin / matrix / weighted-RR / grant-hold) for multi-master interconnect |
+
+> **Source provenance.** The deep-dive references are distilled from canonical VLSI literature: Bhasker & Chadha (STA), Churiwala & Garg (*Principles of VLSI RTL Design* and *Constraining Designs for Synthesis and Timing Analysis*), Steve Kilts (*Advanced FPGA Design*), Dally & Towles (*Principles and Practices of Interconnection Networks*), plus Cummings SNUG papers and IEEE / ARM specifications. Citations are inline at the bottom of each reference document.
 
 ### Other skills
 
@@ -157,7 +160,6 @@ These ten skills ship with full reference docs, compiled examples, validation ga
 | `quartus-flow` | Intel Quartus compile flow, M10K/M20K, DSP inference |
 | `synopsys-flow` | DC, VCS, SpyGlass, DFT Compiler, VC Formal |
 | `cadence-flow` | Genus, Xcelium, JasperGold |
-| `axi-protocols` | AXI4, AXI-Lite, AXI-Stream + **arbiter primitives** (round-robin / matrix / weighted-RR / grant-hold) |
 | `ip-reuse` | IP packaging, portability |
 | `tcl-scripting` | Tcl for EDA tools |
 | `brainstorming` | Socratic questioning, architecture exploration |
