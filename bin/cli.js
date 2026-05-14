@@ -113,7 +113,7 @@ const ALL_SKILLS = [
   'axi-protocols', 'brainstorming', 'cadence-flow', 'clean-rtl',
   'clock-domain-crossing', 'dft-patterns', 'formal-verification',
   'fsm-design', 'ip-reuse', 'low-power-design', 'plan-writing',
-  'quartus-flow', 'synopsys-flow', 'synthesis-guidelines',
+  'quartus-flow', 'sta', 'synopsys-flow', 'synthesis-guidelines',
   'systemverilog-coding', 'tcl-scripting', 'timing-constraints',
   'uvm-coding', 'vivado-flow', 'waveform-debugging',
 ];
