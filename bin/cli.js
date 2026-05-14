@@ -208,7 +208,7 @@ function writeFile(p, content) {
 
 const ALL_WORKFLOWS = [
   'brainstorm', 'debug', 'design', 'integrate', 'lint',
-  'plan', 'review', 'synthesize', 'timing', 'verify',
+  'plan', 'review', 'sta', 'synthesize', 'verify',
 ];
 
 // Read raw skill files (SKILL.md + references/* + examples/*) for a skill

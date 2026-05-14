@@ -120,7 +120,7 @@ Slash command procedures. Invoke with `/command`.
 | `/synthesize` | Synthesis workflow |
 | `/debug` | Debug with waveforms |
 | `/lint` | Linting workflow |
-| `/timing` | Timing analysis |
+| `/sta` | Static Timing Analysis (closure + signoff) |
 | `/review` | Code review |
 | `/integrate` | IP integration |
 
