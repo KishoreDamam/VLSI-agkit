@@ -258,6 +258,10 @@ end
 
 ## See also
 
+- `references/simulation-race.md` — read-write / write-write / always-initial races, NBA discipline, Cummings' 8 guidelines.
+- `references/sim-synth-mismatch.md` — eight canonical causes of RTL-vs-netlist divergence.
+- `references/latch-inference.md` — when latches are inferred, when intentional, `unique`/`priority` traps.
+- `references/synchronous-reset.md` — coding idiom that lets synthesis map reset to the flop's sync-clear pin.
 - `systemverilog-coding` — `logic` vs `reg` vs `wire`, `always_comb` vs `@*`, struct drivers, generate-for.
 - `fsm-design` — state-machine patterns and latch-free `case` discipline.
 - `synthesis-guidelines` — synthesis-aware RTL beyond the basics (attributes, retiming, GLS readiness).
