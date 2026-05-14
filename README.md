@@ -104,7 +104,7 @@ project — pick the tools you use and you only see the directories you need.
 | Tool | What gets written | Slash commands |
 |---|---|---|
 | **Claude Code** | `.claude/skills/<name>/SKILL.md`, `.claude/agents/<role>.md`, `.claude/commands/<workflow>.md` | ✅ via `.claude/commands/` |
-| **GitHub Copilot** | `.github/copilot-instructions.md` (index) + `.github/instructions/<skill>.instructions.md` (auto-applied via `applyTo: "**"`) + `.github/prompts/<workflow>.prompt.md` | ✅ via `/<workflow>` prompts |
+| **GitHub Copilot** | `.github/copilot-instructions.md` (index) + `.github/skills/<name>/SKILL.md` ([cloud-agent skills spec](https://docs.github.com/en/copilot/how-tos/copilot-on-github/customize-copilot/customize-cloud-agent/add-skills), with `references/`+`examples/`) + `.github/prompts/<workflow>.prompt.md` | ✅ via `/<workflow>` prompts |
 | **Gemini CLI** | `GEMINI.md` (router) + `.gemini/{skills,agents,workflows}/<name>.md` | ✅ via GEMINI.md `@file` includes |
 | **Cursor** | `.cursor/rules/<skill>.mdc` (and `agent-<role>.mdc`, `workflow-<name>.mdc`) with `description:` + `alwaysApply: false` | ✅ via Cursor's "rule" mechanism |
 | **Google Antigravity** | `AGENTS.md` (router) + `.agents/{skills,roles,workflows}/<name>.md` | ✅ via `.agents/workflows/` |
