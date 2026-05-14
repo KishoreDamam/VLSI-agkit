@@ -141,7 +141,7 @@ These nine skills ship with full reference docs, compiled examples, validation g
 | `clock-domain-crossing` | flow | 2-FF synchronizers, async FIFO with Gray pointers, handshake CDC, false-path vs max-delay |
 | `systemverilog-coding` | coding | `logic`/`reg`/`wire`, interfaces+modports, generate, struct drivers, `always_comb`/`_ff` |
 | `sta` | flow | **Master-level STA** — slack equations, CRPR, OCV/AOCV/POCV, MMMC corners, SI, useful skew, latch borrow, report_timing deep-dive |
-| `timing-constraints` | flow | SDC/XDC: `create_clock`, I/O delays, multicycle paths, **8-category false-paths catalog**, Xilinx XDC properties |
+| `timing-constraints` | flow | SDC/XDC: `create_clock`, I/O delays, multicycle paths, **8-category false-paths catalog**, clock characteristics (latency / propagation / sense / ideal), port electrical (`set_driving_cell` / load / fanout), modal analysis (`set_case_analysis`), combinational/feedthrough paths, Xilinx XDC |
 | `dft-patterns` | flow | Scan chains (controllability/observability), capture/shift, fault models (stuck-at, transition, cell-aware), ATPG coverage targets |
 | `uvm-coding` | coding | UVM 1.2 components, sequences, TLM analysis ports, dual-FIFO scoreboards, RAL |
 | `synthesis-guidelines` | flow | Synthesis-friendly RTL, attributes, retiming, GLS readiness, X-propagation, **congestion-aware RTL** |
