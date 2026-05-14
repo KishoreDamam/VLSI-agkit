@@ -132,23 +132,24 @@ Skills are tiered: each has a thin `SKILL.md` index card (≤300 lines) plus dee
 
 ### Production-grade (Wave 1) ⭐
 
-These seven skills ship with full reference docs, compiled examples, validation gates, and citations:
+These nine skills ship with full reference docs, compiled examples, validation gates, and citations:
 
 | Skill | Type | What it covers |
 |---|---|---|
+| `clean-rtl` | coding | Simulation races (Cummings' 8 NBA rules), sim/synth mismatch (8 causes), latch inference & `unique`/`priority`, sync-reset coding idiom |
 | `fsm-design` | coding | One/two/three-process FSMs, encoding tradeoffs, timeout counters, SVA assertions |
 | `clock-domain-crossing` | flow | 2-FF synchronizers, async FIFO with Gray pointers, handshake CDC, false-path vs max-delay |
 | `systemverilog-coding` | coding | `logic`/`reg`/`wire`, interfaces+modports, generate, struct drivers, `always_comb`/`_ff` |
 | `sta` | flow | **Master-level STA** — slack equations, CRPR, OCV/AOCV/POCV, MMMC corners, SI, useful skew, latch borrow, report_timing deep-dive |
-| `timing-constraints` | flow | SDC/XDC: `create_clock`, I/O delays, multicycle paths, Xilinx XDC properties |
+| `timing-constraints` | flow | SDC/XDC: `create_clock`, I/O delays, multicycle paths, **8-category false-paths catalog**, Xilinx XDC properties |
+| `dft-patterns` | flow | Scan chains (controllability/observability), capture/shift, fault models (stuck-at, transition, cell-aware), ATPG coverage targets |
 | `uvm-coding` | coding | UVM 1.2 components, sequences, TLM analysis ports, dual-FIFO scoreboards, RAL |
-| `synthesis-guidelines` | flow | Synthesis-friendly RTL, attributes, retiming, GLS readiness, X-propagation |
+| `synthesis-guidelines` | flow | Synthesis-friendly RTL, attributes, retiming, GLS readiness, X-propagation, **congestion-aware RTL** |
 
 ### Other skills
 
 | Skill | What it covers |
 |---|---|
-| `clean-rtl` | RTL coding standards, naming, synthesizable patterns |
 | `formal-verification` | Assertions, properties, model checking |
 | `waveform-debugging` | Waveform analysis, debug techniques |
 | `vivado-flow` | Xilinx Vivado synthesis, impl, ILA/VIO debug |
@@ -157,7 +158,6 @@ These seven skills ship with full reference docs, compiled examples, validation 
 | `cadence-flow` | Genus, Xcelium, JasperGold |
 | `axi-protocols` | AXI4, AXI-Lite, AXI-Stream |
 | `low-power-design` | UPF, power gating, clock gating |
-| `dft-patterns` | Scan, BIST, ATPG |
 | `ip-reuse` | IP packaging, portability |
 | `tcl-scripting` | Tcl for EDA tools |
 | `brainstorming` | Socratic questioning, architecture exploration |

@@ -198,6 +198,8 @@ digraph flow {
   vs system-synchronous derivation; DDR two-edge model.
 - `references/multicycle-paths.md` — `set_multicycle_path` setup and hold mechanics;
   N=3 concrete example with hold compensation.
+- `references/false-paths-catalog.md` — eight-category catalog of when to use
+  `set_false_path` vs `set_clock_groups` vs `set_case_analysis`, with risk notes.
 - `references/xilinx-xdc.md` — Xilinx-specific: `PACKAGE_PIN`, `IOSTANDARD`,
   `CLOCK_DEDICATED_ROUTE`, `create_pblock`, `PROHIBIT`, `CLOCK_BUFFER_TYPE`.
 - `examples/constraints.xdc` — annotated XDC for a small design with two clocks,

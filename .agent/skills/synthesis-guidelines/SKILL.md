@@ -220,5 +220,6 @@ digraph fix_timing {
 - `references/synthesis-attributes.md` — full attribute reference table for Vivado and DC/Genus
 - `references/timing-optimization.md` — pipelining, operand pre-registration, retiming, adder trees, DSP cascading
 - `references/gate-level-sim.md` — GLS hazards, X-propagation modes, reset coverage, SDF annotation
+- `references/congestion-aware-rtl.md` — RTL patterns that drive routing congestion (wide muxes, fanout, fanin cones); recognise and pipeline before placement
 - `examples/pipelined_mult_add.sv` — before/after pipelining example with synthesis attributes
 - `timing-constraints` skill — SDC authoring, clock groups, multicycle paths

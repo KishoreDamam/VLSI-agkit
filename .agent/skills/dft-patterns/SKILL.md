@@ -185,6 +185,15 @@ write_test_protocol test.spf
 
 ---
 
+## See also
+
+- `references/scan-chains.md` — controllability/observability rationale, scan-flop mechanics, capture vs shift, non-scannable structures and their DFT fixes.
+- `references/fault-models.md` — stuck-at, transition, path-delay, bridging, IDDQ, cell-aware; what each detects and what 99% coverage actually means.
+- `clean-rtl` skill `references/latch-inference.md` — kills the #1 DFT DRC blocker.
+- `timing-constraints` skill `references/false-paths-catalog.md` — Category 4 (multi-mode scan vs functional).
+
+---
+
 ## Validation checklist
 
 - [ ] No transparent latches in the design (lint clean) or all latches scan-isolated.
