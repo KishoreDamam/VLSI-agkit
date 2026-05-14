@@ -256,6 +256,12 @@ Read Data depends on:
 
 ---
 
+## See also
+
+- `references/arbiters.md` — fixed-priority, round-robin, matrix, weighted-RR, and grant-hold arbiter primitives for AXI interconnect arbitration; selection guide and verification checklist.
+
+---
+
 ## Anti-patterns (do NOT do this)
 
 1. **Asserting `READY` combinationally from `VALID`.** Creates a combinational loop across the link; many vendor IPs will deadlock or violate the AXI spec rule that `READY` may depend on `VALID` but not vice versa.

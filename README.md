@@ -157,7 +157,7 @@ These ten skills ship with full reference docs, compiled examples, validation ga
 | `quartus-flow` | Intel Quartus compile flow, M10K/M20K, DSP inference |
 | `synopsys-flow` | DC, VCS, SpyGlass, DFT Compiler, VC Formal |
 | `cadence-flow` | Genus, Xcelium, JasperGold |
-| `axi-protocols` | AXI4, AXI-Lite, AXI-Stream |
+| `axi-protocols` | AXI4, AXI-Lite, AXI-Stream + **arbiter primitives** (round-robin / matrix / weighted-RR / grant-hold) |
 | `ip-reuse` | IP packaging, portability |
 | `tcl-scripting` | Tcl for EDA tools |
 | `brainstorming` | Socratic questioning, architecture exploration |
