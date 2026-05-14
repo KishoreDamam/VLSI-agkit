@@ -20,7 +20,7 @@ Selecting `verification-engineer` automatically pulls in `uvm-coding`, `formal-v
 ### Non-interactive install (CI / scripted)
 
 ```bash
-# Install EVERYTHING (all 5 tools, all 14 roles, all 20 skills)
+# Install EVERYTHING (all 5 tools, all 14 roles, all 21 skills)
 npx @kishore-damam/vlsi-agkit init --yes
 
 # Specific tools, all roles
@@ -132,13 +132,14 @@ Skills are tiered: each has a thin `SKILL.md` index card (≤300 lines) plus dee
 
 ### Production-grade (Wave 1) ⭐
 
-These six skills ship with full reference docs, compiled examples, validation gates, and citations:
+These seven skills ship with full reference docs, compiled examples, validation gates, and citations:
 
 | Skill | Type | What it covers |
 |---|---|---|
 | `fsm-design` | coding | One/two/three-process FSMs, encoding tradeoffs, timeout counters, SVA assertions |
 | `clock-domain-crossing` | flow | 2-FF synchronizers, async FIFO with Gray pointers, handshake CDC, false-path vs max-delay |
 | `systemverilog-coding` | coding | `logic`/`reg`/`wire`, interfaces+modports, generate, struct drivers, `always_comb`/`_ff` |
+| `sta` | flow | **Master-level STA** — slack equations, CRPR, OCV/AOCV/POCV, MMMC corners, SI, useful skew, latch borrow, report_timing deep-dive |
 | `timing-constraints` | flow | SDC/XDC: `create_clock`, I/O delays, multicycle paths, Xilinx XDC properties |
 | `uvm-coding` | coding | UVM 1.2 components, sequences, TLM analysis ports, dual-FIFO scoreboards, RAL |
 | `synthesis-guidelines` | flow | Synthesis-friendly RTL, attributes, retiming, GLS readiness, X-propagation |
@@ -192,7 +193,7 @@ Invoke workflows with slash commands:
 | `/synthesize`  | Synthesis workflow                    |
 | `/debug`       | Debug with waveforms                  |
 | `/lint`        | Linting workflow                      |
-| `/timing`      | Timing analysis                       |
+| `/sta`         | Static Timing Analysis (closure + signoff) |
 | `/review`      | Code review                           |
 | `/integrate`   | IP integration                        |
 
@@ -200,7 +201,7 @@ Example:
 ```
 /design AXI4 memory controller
 /verify FIFO with UVM
-/timing analyze clock domain crossings
+/sta close WNS on path through u_alu/add_*
 ```
 
 ## Agent List

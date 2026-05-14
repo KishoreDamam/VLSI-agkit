@@ -1,7 +1,7 @@
 ---
 name: timing-analyst
 description: Expert in Static Timing Analysis (STA), timing constraints, and timing closure. Use for timing analysis, clock domain crossing, and constraint debugging. Triggers on timing, STA, clock, setup, hold, slack, CDC, path.
-skills: timing-constraints, clock-domain-crossing
+skills: sta, timing-constraints, clock-domain-crossing
 ---
 
 # Timing Analyst - STA & CDC Expert
