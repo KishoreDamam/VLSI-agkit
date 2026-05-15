@@ -280,9 +280,28 @@ endtask
 
 ## See also
 
-- `references/component-architecture.md` — factory, config_db patterns, active/passive agent, phase ordering
-- `references/sequences-and-items.md` — do_copy/do_compare, virtual sequences, p_sequencer, arbitration
-- `references/analysis-ports-and-scoreboards.md` — TLM port/export/imp topology, uvm_subscriber, built-in comparators
-- `references/register-model.md` — UVM RAL: reg_block, adapter, predictor, register test sequences
+**Core architecture:**
+- `references/component-architecture.md` — factory + overrides catalog, config_db precedence, virtual-interface package pattern, dual-top, active/passive agent, build/connect ordering
+- `references/uvm-package-structure.md` — five-tier package hierarchy (utility/agent/sequence/env/test), directory layout, file naming, namespace hygiene
+
+**Phasing & objections:**
+- `references/phasing-deep-dive.md` — every build / run-time / cleanup phase, when to use each, parallel run-time phase execution
+- `references/objections-deep-dive.md` — raise/drop mechanics, count propagation, drain time, `phase_ready_to_end`, callbacks (don't use them)
+
+**Stimulus:**
+- `references/sequences-and-items.md` — body idioms, late randomization, polymorphism, sequence library, arbitration, pipelined drivers, slave drivers
+- `references/virtual-sequences-and-layering.md` — virtual sequencer + sequence, translator sequences, API/worker/virtual hierarchy
+
+**Analysis:**
+- `references/analysis-ports-and-scoreboards.md` — monitor anatomy, predictor (proxy DUT), dual-FIFO scoreboard, `uvm_subscriber`, post-run phases
+
+**Register layer:**
+- `references/register-model.md` — building the model, adapter, predictor (auto vs passive), access methods, built-in sequences, backdoor HDL paths, quirky-register callbacks, RAL-driven scoreboard + coverage
+
+**Operations:**
+- `references/messaging-and-debug.md` — verbosity, message IDs, plusargs (`+UVM_OBJECTION_TRACE` etc.), factory / config_db / phase / TLM-port debug dumps
+- `references/two-kingdoms-emulation.md` — HDL-domain vs testbench-domain split for emulation-ready BFM-based testbenches
+
+**Examples:**
 - `examples/axi_lite_agent.sv` — complete AXI-Lite agent (seq item, driver, monitor, agent)
 - `examples/axi_lite_scoreboard.sv` — dual-FIFO scoreboard with run_phase compare loop
